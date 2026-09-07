@@ -1,0 +1,318 @@
+.em-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  transition: all var(--transition-normal);
+}
+
+.em-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.em-menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  transition: all var(--transition-fast);
+}
+
+.em-menu-toggle:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.em-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.em-nav-brand .brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--grad-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+}
+
+.em-nav-brand span.highlight {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.em-search-wrapper {
+  position: relative;
+  width: 280px;
+}
+
+.em-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.em-search-input {
+  width: 100%;
+  padding: 0.55rem 0.85rem 0.55rem 2.3rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.em-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Right Navigation Section */
+.em-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.em-role-switcher {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+
+.em-role-pill {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.em-role-pill:hover {
+  color: var(--text-main);
+}
+
+.em-role-pill.active {
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.em-role-pill.active.admin {
+  color: #7c3aed;
+}
+
+.em-role-pill.active.teacher {
+  color: #0284c7;
+}
+
+.em-role-pill.active.student {
+  color: #059669;
+}
+
+.em-icon-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: all var(--transition-fast);
+}
+
+.em-icon-button:hover {
+  background: #ffffff;
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+
+.em-badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* Notifications Dropdown */
+.em-dropdown-popover {
+  position: absolute;
+  top: 58px;
+  right: 1.75rem;
+  width: 320px;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+  z-index: 50;
+  animation: popIn 0.2s ease-out;
+  overflow: hidden;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.em-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.em-dropdown-header h4 {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.em-dropdown-items {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.em-dropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background var(--transition-fast);
+}
+
+.em-dropdown-item:hover {
+  background: var(--bg-surface);
+}
+
+.em-dropdown-item .notif-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.em-dropdown-item .notif-text {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.em-dropdown-item .notif-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* User Profile Badge */
+.em-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.em-user-profile:hover {
+  background: #ffffff;
+  border-color: var(--border-focus);
+}
+
+.em-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.em-user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.em-user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.em-user-role-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+@media (max-width: 900px) {
+  .em-search-wrapper,
+  .em-role-switcher {
+    display: none;
+  }
+}

@@ -12,6 +12,9 @@ import {
   ChevronDown
 } from 'lucide-react';
 import '../css/Navbar.css';
+import ThemeSwitcher from './ThemeSwitcher';
+import { ADMIN_ROUTE, setAdminAuthorized } from '../../config/adminConfig';
+import { TEACHER_ROUTE, setTeacherAuthorized } from '../../config/teacherConfig';
 
 const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUser }) => {
   const navigate = useNavigate();
@@ -21,8 +24,8 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
 
   // Derive active display role
   let activeRole = currentRole;
-  if (location.pathname.includes('/admin')) activeRole = 'admin';
-  else if (location.pathname.includes('/teacher')) activeRole = 'teacher';
+  if (location.pathname.includes('/admin') || location.pathname === ADMIN_ROUTE || location.pathname.includes('/admin@1234')) activeRole = 'admin';
+  else if (location.pathname.includes('/teacher') || location.pathname === TEACHER_ROUTE || location.pathname.includes('/teacher@1234')) activeRole = 'teacher';
   else if (location.pathname.includes('/student')) activeRole = 'student';
 
   const notifications = [
@@ -31,13 +34,10 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
     { id: 3, text: 'Faculty meeting scheduled at 4:00 PM', time: '3h ago' },
   ];
 
-  const handleRoleSwitch = (role) => {
-    if (onRoleChange) onRoleChange(role);
-    navigate(`/${role}`);
-  };
-
   const handleLogout = () => {
-    navigate('/login');
+    setAdminAuthorized(false);
+    setTeacherAuthorized(false);
+    navigate('/');
   };
 
   const userDisplayName = currentUser?.name || (
@@ -65,43 +65,46 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
           style={{ cursor: 'pointer' }}
         >
           <div className="brand-badge">
-            <GraduationCap size={20} />
+            <GraduationCap size={17} />
           </div>
-          <span>Edu<span className="highlight">Manage</span></span>
+          <div className="brand-text-block">
+            <span className="brand-title">EDU·MANAGE</span>
+            <span className="brand-sub">ACADEMIA</span>
+          </div>
         </div>
 
         <div className="em-search-wrapper">
-          <Search size={16} className="em-search-icon" />
+          <Search size={15} className="em-search-icon" />
           <input 
             type="text" 
-            placeholder="Search students, courses, staff..." 
+            placeholder="Search directory, courses, faculty..." 
             className="em-search-input"
           />
         </div>
       </div>
 
       <div className="em-navbar-right">
-        {/* Quick Role Switcher for instant demonstration & testing */}
+        {/* Active Role Indicator */}
         <div className="em-role-switcher">
-          <button 
-            className={`em-role-pill ${activeRole === 'admin' ? 'active admin' : ''}`}
-            onClick={() => handleRoleSwitch('admin')}
-          >
-            <Shield size={13} /> Admin
-          </button>
-          <button 
-            className={`em-role-pill ${activeRole === 'teacher' ? 'active teacher' : ''}`}
-            onClick={() => handleRoleSwitch('teacher')}
-          >
-            <BookOpen size={13} /> Teacher
-          </button>
-          <button 
-            className={`em-role-pill ${activeRole === 'student' ? 'active student' : ''}`}
-            onClick={() => handleRoleSwitch('student')}
-          >
-            <User size={13} /> Student
-          </button>
+          {activeRole === 'admin' && (
+            <span className="em-role-pill active" style={{ cursor: 'default', background: 'var(--neo-pink, #ff66c4)' }}>
+              <Shield size={12} /> Admin
+            </span>
+          )}
+          {activeRole === 'teacher' && (
+            <span className="em-role-pill active" style={{ cursor: 'default', background: 'var(--neo-yellow, #ffe600)' }}>
+              <BookOpen size={12} /> Faculty Desk
+            </span>
+          )}
+          {activeRole === 'student' && (
+            <span className="em-role-pill active" style={{ cursor: 'default', background: 'var(--neo-cyan, #38bdf8)' }}>
+              <User size={12} /> Student Hub
+            </span>
+          )}
         </div>
+
+        {/* Theme Switcher */}
+        <ThemeSwitcher />
 
         {/* Notifications Button */}
         <div style={{ position: 'relative' }}>
@@ -166,7 +169,10 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
               </div>
               <div style={{ padding: '0.5rem' }}>
                 <button 
-                  onClick={() => navigate('/')} 
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/landing');
+                  }} 
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -180,7 +186,7 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <GraduationCap size={15} /> Landing Page
+                  <GraduationCap size={15} /> Campus Architecture
                 </button>
                 <button 
                   onClick={handleLogout} 

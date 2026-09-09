@@ -7,7 +7,8 @@ import {
   Plus,
   Download,
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
@@ -20,6 +21,9 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusToast, setStatusToast] = useState(null);
+  const [showPolicyGuide, setShowPolicyGuide] = useState(true);
 
   // Initial State for Students
   const [students, setStudents] = useState([
@@ -30,6 +34,35 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
     { id: 'STU-1096', name: 'Olivia Brown', email: 'olivia.b@edumanage.edu', dept: 'Biotechnology', year: 'Year 3', gpa: '3.97', status: 'Active' },
     { id: 'STU-1097', name: 'Lucas Scott', email: 'lucas.s@edumanage.edu', dept: 'Computer Science', year: 'Year 2', gpa: '3.21', status: 'Inactive' },
   ]);
+
+  const handleStatusChange = (studentId, newStatus) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return { ...s, status: newStatus };
+      }
+      return s;
+    }));
+
+    const student = students.find(s => s.id === studentId);
+    const studentName = student ? student.name : 'Student';
+    let detail = '';
+    if (newStatus === 'Active') {
+      detail = 'Full LMS & campus privileges active. Enrolled in courses.';
+    } else if (newStatus === 'Probation') {
+      detail = 'Academic standing under review. Counselor advisory sessions required.';
+    } else if (newStatus === 'Inactive') {
+      detail = 'Academic enrollment paused. LMS portal and library access suspended.';
+    }
+
+    setStatusToast({
+      status: newStatus,
+      message: `${studentName} marked as ${newStatus}. ${detail}`
+    });
+
+    setTimeout(() => {
+      setStatusToast(null);
+    }, 5000);
+  };
 
   // Initial State for Faculty
   const [teachers] = useState([
@@ -93,12 +126,28 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
     { header: 'Year', accessor: 'year', width: '100px' },
     { header: 'GPA', accessor: 'gpa', width: '90px' },
     {
-      header: 'Status',
+      header: 'STATUS',
+      accessor: 'status',
+      width: '150px',
       render: (row) => {
-        let badgeClass = 'badge-success';
-        if (row.status === 'Probation') badgeClass = 'badge-warning';
-        if (row.status === 'Inactive') badgeClass = 'badge-danger';
-        return <span className={`badge ${badgeClass}`}>{row.status}</span>;
+        let statusStyleClass = 'status-active';
+        if (row.status === 'Probation') statusStyleClass = 'status-probation';
+        if (row.status === 'Inactive') statusStyleClass = 'status-inactive';
+
+        return (
+          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <select
+              value={row.status}
+              onChange={(e) => handleStatusChange(row.id, e.target.value)}
+              className={`status-neo-select ${statusStyleClass}`}
+              title="Click to change student status: Active, Probation, or Inactive"
+            >
+              <option value="Active" style={{ background: '#141418', color: '#4ADE80', fontWeight: '800' }}>ACTIVE</option>
+              <option value="Probation" style={{ background: '#141418', color: '#FFE600', fontWeight: '800' }}>PROBATION</option>
+              <option value="Inactive" style={{ background: '#141418', color: '#FF6584', fontWeight: '800' }}>INACTIVE</option>
+            </select>
+          </div>
+        );
       }
     }
   ];
@@ -138,7 +187,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
   ];
 
   return (
-    <div>
+    <div data-style="neo-brutalism">
       <Navbar
         toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
         currentRole="admin"
@@ -158,8 +207,8 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
           {/* Header Title Bar */}
           <div className="dashboard-header">
             <div className="dashboard-header-title">
-              <h1>Admin Command Center</h1>
-              <p>Institutional oversight, faculty metrics, student records & campus finance</p>
+              <h1>⚡ Institutional Command Center</h1>
+              <p>Neo-Brutalist University Oversight • Faculty Registers, Endowments & Student Records</p>
             </div>
 
             <div className="dashboard-header-actions">
@@ -316,20 +365,150 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
             </>
           )}
 
-          {activeTab === 'students' && (
-            <DataTable
-              title="Full Students Directory"
-              subtitle="All registered students and academic status"
-              columns={studentColumns}
-              data={students}
-              searchPlaceholder="Search by name, email, department..."
-              actionButton={
-                <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-                  <Plus size={14} /> Register New Student
-                </button>
-              }
-            />
-          )}
+          {activeTab === 'students' && (() => {
+            const displayedStudents = statusFilter === 'All' 
+              ? students 
+              : students.filter(s => s.status === statusFilter);
+
+            const activeCount = students.filter(s => s.status === 'Active').length;
+            const probationCount = students.filter(s => s.status === 'Probation').length;
+            const inactiveCount = students.filter(s => s.status === 'Inactive').length;
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* Status Change Feedback Toast */}
+                {statusToast && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.9rem 1.25rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: statusToast.status === 'Active' ? 'rgba(16, 185, 129, 0.12)' : statusToast.status === 'Probation' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${statusToast.status === 'Active' ? 'rgba(16, 185, 129, 0.3)' : statusToast.status === 'Probation' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    color: 'var(--text-main)',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <CheckCircle2 size={18} color={statusToast.status === 'Active' ? '#10B981' : statusToast.status === 'Probation' ? '#F59E0B' : '#EF4444'} />
+                      <span>{statusToast.message}</span>
+                    </div>
+                    <button 
+                      onClick={() => setStatusToast(null)} 
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Educational / Policy Architecture: How Student Status Works */}
+                <div style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '1.25rem 1.5rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Info size={18} color="var(--primary)" />
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Institutional Policy: How Student Status Operates
+                      </h4>
+                    </div>
+                    <button 
+                      onClick={() => setShowPolicyGuide(!showPolicyGuide)}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                    >
+                      {showPolicyGuide ? 'Hide Policy Details ▲' : 'Explain Status Guidelines ▼'}
+                    </button>
+                  </div>
+
+                  {showPolicyGuide && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                      <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', borderLeft: '4px solid #10B981' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#10B981', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          <span className="badge-dot" style={{ background: '#10B981' }}></span> 🟢 ACTIVE STATUS
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          <strong>Privileges:</strong> Good academic standing (GPA ≥ 3.50). Full campus privileges enabled.<br />
+                          <strong>Workflows:</strong> Access to lecture halls, LMS coursework dropzone, live attendance tracking, library lending, and official transcript issue.
+                        </p>
+                      </div>
+
+                      <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', borderLeft: '4px solid #F59E0B' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#F59E0B', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          <span className="badge-dot" style={{ background: '#F59E0B' }}></span> 🟡 PROBATION STATUS
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          <strong>Privileges:</strong> Academic alert flag (GPA &lt; 3.50 or attendance &lt; 75%).<br />
+                          <strong>Workflows:</strong> Still attends lectures and sits for examinations, but triggers mandatory weekly faculty mentoring. Restricted from student council.
+                        </p>
+                      </div>
+
+                      <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', borderLeft: '4px solid #EF4444' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#EF4444', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          <span className="badge-dot" style={{ background: '#EF4444' }}></span> 🔴 INACTIVE STATUS
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          <strong>Privileges:</strong> Registration suspended or semester withdrawal.<br />
+                          <strong>Workflows:</strong> LMS portal locked, coursework access blocked, and student ID pass deactivated. Re-activation requires Dean/Admin clearance.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Status Filter Tabs */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginRight: '4px' }}>Quick Filter:</span>
+                  <button
+                    className={`btn btn-sm ${statusFilter === 'All' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setStatusFilter('All')}
+                  >
+                    All Students ({students.length})
+                  </button>
+                  <button
+                    className={`btn btn-sm ${statusFilter === 'Active' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={statusFilter === 'Active' ? { background: '#10B981', borderColor: '#10B981', color: '#fff' } : {}}
+                    onClick={() => setStatusFilter('Active')}
+                  >
+                    🟢 Active ({activeCount})
+                  </button>
+                  <button
+                    className={`btn btn-sm ${statusFilter === 'Probation' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={statusFilter === 'Probation' ? { background: '#F59E0B', borderColor: '#F59E0B', color: '#000' } : {}}
+                    onClick={() => setStatusFilter('Probation')}
+                  >
+                    🟡 Probation ({probationCount})
+                  </button>
+                  <button
+                    className={`btn btn-sm ${statusFilter === 'Inactive' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={statusFilter === 'Inactive' ? { background: '#EF4444', borderColor: '#EF4444', color: '#fff' } : {}}
+                    onClick={() => setStatusFilter('Inactive')}
+                  >
+                    🔴 Inactive ({inactiveCount})
+                  </button>
+                </div>
+
+                <DataTable
+                  title="Full Students Directory"
+                  subtitle={`Showing ${displayedStudents.length} of ${students.length} students • Select any dropdown in 'Status' to update instantly`}
+                  columns={studentColumns}
+                  data={displayedStudents}
+                  searchPlaceholder="Search by name, email, department..."
+                  actionButton={
+                    <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
+                      <Plus size={14} /> Register New Student
+                    </button>
+                  }
+                />
+              </div>
+            );
+          })()}
 
           {activeTab === 'teachers' && (
             <DataTable

@@ -116,7 +116,7 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
   ];
 
   return (
-    <div>
+    <div data-style="neo-brutalism">
       <Navbar
         toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
         currentRole="student"
@@ -136,10 +136,10 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
           {/* Student Welcome Banner */}
           <div className="student-banner">
             <div className="student-banner-info">
-              <div className="student-large-avatar">A</div>
+              <div className="student-large-avatar">⚡</div>
               <div className="student-banner-text">
-                <h2>Welcome, Alex Rivera</h2>
-                <p>Computer Science & AI • Year 3 • Student ID: #STU-2024-88</p>
+                <h2>⚡ ALEX RIVERA // SCHOLAR HUB</h2>
+                <p>COMPUTER SCIENCE & AI // YEAR 3 // STU-ID: #STU-2024-88</p>
               </div>
             </div>
 

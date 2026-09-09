@@ -2,120 +2,73 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   GraduationCap,
-  Shield,
-  BookOpen,
-  User,
   Mail,
   Lock,
   ArrowRight,
+  ArrowLeft,
   Sparkles
 } from 'lucide-react';
+import ThemeSwitcher from './ThemeSwitcher';
 import '../css/LoginPage.css';
 
 const LoginPage = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [role, setRole] = useState('admin');
-  const [email, setEmail] = useState('admin@edumanage.edu');
+  const [email, setEmail] = useState('student@edumanage.edu');
   const [password, setPassword] = useState('password123');
 
-  const presetCredentials = {
-    admin: {
-      email: 'admin@edumanage.edu',
-      password: 'password123',
-      name: 'Dr. Sarah Jenkins',
-      role: 'admin',
-      dashboard: '/admin'
-    },
-    teacher: {
-      email: 'teacher@edumanage.edu',
-      password: 'password123',
-      name: 'Prof. David Miller',
-      role: 'teacher',
-      dashboard: '/teacher'
-    },
-    student: {
-      email: 'student@edumanage.edu',
-      password: 'password123',
-      name: 'Alex Rivera',
-      role: 'student',
-      dashboard: '/student'
-    }
-  };
-
-  const handleRoleSelect = (selectedRole) => {
-    setRole(selectedRole);
-    setEmail(presetCredentials[selectedRole].email);
-    setPassword(presetCredentials[selectedRole].password);
+  const studentUser = {
+    email: 'student@edumanage.edu',
+    password: 'password123',
+    name: 'Alex Rivera',
+    role: 'student',
+    dashboard: '/student'
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const userObj = presetCredentials[role];
     if (onLoginSuccess) {
-      onLoginSuccess(userObj);
+      onLoginSuccess(studentUser);
     }
-    navigate(userObj.dashboard);
+    navigate('/student');
   };
 
-  const handleInstantDemo = (demoRole) => {
-    const userObj = presetCredentials[demoRole];
+  const handleInstantDemo = () => {
     if (onLoginSuccess) {
-      onLoginSuccess(userObj);
+      onLoginSuccess(studentUser);
     }
-    navigate(userObj.dashboard);
+    navigate('/student');
   };
 
   return (
-    <div className="login-page-container">
+    <div className="login-page-container" data-style="neo-brutalism">
+      <div className="login-top-bar">
+        <Link to="/landing" className="login-back-link">
+          <ArrowLeft size={16} /> Campus Overview
+        </Link>
+        <ThemeSwitcher />
+      </div>
+
       <div className="login-bg-glow"></div>
 
       <div className="login-card">
         <div className="login-header">
           <div className="login-brand-icon">
-            <GraduationCap size={26} />
+            <GraduationCap size={28} strokeWidth={2.5} />
           </div>
-          <h2>Welcome to EduManage</h2>
-          <p>Sign in to access your customized academic portal</p>
-        </div>
-
-        {/* Role Selector */}
-        <div className="login-role-tabs">
-          <button 
-            type="button"
-            className={`login-role-tab ${role === 'admin' ? 'active' : ''}`}
-            onClick={() => handleRoleSelect('admin')}
-          >
-            <Shield size={16} />
-            <span>Admin</span>
-          </button>
-          <button 
-            type="button"
-            className={`login-role-tab ${role === 'teacher' ? 'active' : ''}`}
-            onClick={() => handleRoleSelect('teacher')}
-          >
-            <BookOpen size={16} />
-            <span>Teacher</span>
-          </button>
-          <button 
-            type="button"
-            className={`login-role-tab ${role === 'student' ? 'active' : ''}`}
-            onClick={() => handleRoleSelect('student')}
-          >
-            <User size={16} />
-            <span>Student</span>
-          </button>
+          <h2>⚡ Student Portal Sign In</h2>
+          <p>AUTHENTICATE TO ACCESS YOUR SCHOLAR DESK</p>
         </div>
 
         {/* 1-Click Instant Demo Login */}
         <div className="demo-preset-box">
           <div className="demo-preset-text">
             <strong>Ready for 1-Click Demo?</strong>
-            <span>Log in immediately as {role.toUpperCase()}</span>
+            <span>Log in immediately as SCHOLAR (Alex Rivera)</span>
           </div>
           <button 
             type="button" 
             className="demo-btn"
-            onClick={() => handleInstantDemo(role)}
+            onClick={handleInstantDemo}
           >
             Instant Login <Sparkles size={12} style={{ display: 'inline', marginLeft: 4 }} />
           </button>
@@ -161,13 +114,18 @@ const LoginPage = ({ onLoginSuccess }) => {
           </div>
 
           <button type="submit" className="btn btn-primary login-submit-btn">
-            Sign In as {role.charAt(0).toUpperCase() + role.slice(1)} <ArrowRight size={16} />
+            Sign In as Student <ArrowRight size={16} />
           </button>
         </form>
 
-        <div className="login-footer-links">
-          <span>Return to </span>
-          <Link to="/">EduManage Home</Link>
+        <div className="login-footer-links" style={{ flexDirection: 'column', gap: '6px', textAlign: 'center' }}>
+          <div>
+            <span>Explore </span>
+            <Link to="/landing">Campus Overview & Architecture</Link>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+            Faculty & Admin portals: direct institutional routes (<code>/teacher@1234</code>, <code>/admin@1234</code>)
+          </div>
         </div>
       </div>
     </div>

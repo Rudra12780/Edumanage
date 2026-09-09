@@ -16,6 +16,8 @@ import {
   MessageSquareText
 } from 'lucide-react';
 import '../css/Sidebar.css';
+import { ADMIN_ROUTE } from '../../config/adminConfig';
+import { TEACHER_ROUTE } from '../../config/teacherConfig';
 
 const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect }) => {
   const navigate = useNavigate();
@@ -23,13 +25,13 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
 
   // Determine current active section
   let role = currentRole;
-  if (location.pathname.includes('/admin')) role = 'admin';
-  else if (location.pathname.includes('/teacher')) role = 'teacher';
+  if (location.pathname.includes('/admin') || location.pathname === ADMIN_ROUTE || location.pathname.includes('/admin@1234')) role = 'admin';
+  else if (location.pathname.includes('/teacher') || location.pathname === TEACHER_ROUTE || location.pathname.includes('/teacher@1234')) role = 'teacher';
   else if (location.pathname.includes('/student')) role = 'student';
 
   const menuConfigs = {
     admin: [
-      { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, path: '/admin' },
+      { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, path: ADMIN_ROUTE },
       { id: 'students', label: 'Students Directory', icon: GraduationCap, badge: '2,840' },
       { id: 'teachers', label: 'Faculty & Teachers', icon: Users, badge: '142' },
       { id: 'courses', label: 'Academic Courses', icon: BookOpen, badge: '38' },
@@ -37,7 +39,7 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
       { id: 'settings', label: 'System Settings', icon: Settings },
     ],
     teacher: [
-      { id: 'overview', label: 'Teacher Overview', icon: LayoutDashboard, path: '/teacher' },
+      { id: 'overview', label: 'Teacher Overview', icon: LayoutDashboard, path: TEACHER_ROUTE },
       { id: 'classes', label: 'Assigned Classes', icon: BookOpen, badge: '4' },
       { id: 'attendance', label: 'Mark Attendance', icon: CalendarCheck },
       { id: 'grading', label: 'Grades & Reviews', icon: FileSpreadsheet, badge: '18' },

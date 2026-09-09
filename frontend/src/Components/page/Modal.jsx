@@ -17,7 +17,7 @@ const Modal = ({ isOpen, onClose, title, children, footer }) => {
 
   return (
     <div className="em-modal-overlay" onClick={onClose}>
-      <div className="em-modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="em-modal-card em-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="em-modal-header">
           <h3>{title}</h3>
           <button className="em-modal-close-btn" onClick={onClose} aria-label="Close modal">

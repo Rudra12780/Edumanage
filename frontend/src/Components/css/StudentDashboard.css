@@ -1,17 +1,17 @@
 /* =========================================================
-   STUDENT DASHBOARD STYLES (NEO-BRUTALIST SCHOLAR HUB)
+   STUDENT DASHBOARD STYLES (CLEAN & FRIENDLY SCHOLAR HUB)
    ========================================================= */
 .student-banner {
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
   padding: 2rem 2.25rem;
   color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2rem;
-  box-shadow: 4px 4px 0px var(--border);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   gap: 1.5rem;
   position: relative;
@@ -24,61 +24,60 @@
 }
 
 .student-large-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: #000000;
-  border: 2px solid var(--border);
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(79, 70, 229, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-heading);
-  font-size: 1.6rem;
-  font-weight: 900;
-  box-shadow: 3px 3px 0px var(--border);
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 4px 12px -2px var(--primary-glow);
 }
 
 .student-banner-text h2 {
   font-family: var(--font-heading);
-  font-size: 1.65rem;
+  font-size: 1.55rem;
   color: var(--text-main);
   font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
 
 .student-banner-text p {
   color: var(--text-muted);
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .student-gpa-badge {
-  background: var(--success);
-  border: 2px solid #000000;
-  border-radius: var(--radius-sm);
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: var(--radius-lg);
   padding: 0.85rem 1.85rem;
   text-align: center;
-  box-shadow: 3px 3px 0px var(--border);
-  color: #000000;
+  box-shadow: var(--shadow-sm);
+  color: #047857;
 }
 
 .student-gpa-badge .label {
   font-family: var(--font-heading);
   font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 800;
-  color: #000000;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #047857;
 }
 
 .student-gpa-badge .value {
-  font-size: 2.1rem;
-  font-weight: 900;
+  font-size: 2rem;
+  font-weight: 800;
   font-family: var(--font-heading);
-  color: #000000;
+  color: #047857;
 }
 
 /* Course Progress Cards Grid */
@@ -91,19 +90,20 @@
 
 .course-card {
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.35rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 4px 4px 0px var(--border);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 .course-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px var(--border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(79, 70, 229, 0.3);
 }
 
 .course-card-top {
@@ -116,70 +116,70 @@
 .course-code-pill {
   font-family: var(--font-heading);
   font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   padding: 3px 8px;
-  border-radius: var(--radius-xs);
-  background: var(--neo-cyan);
-  color: #000000;
-  border: 1px solid #000000;
-  box-shadow: 2px 2px 0px var(--border);
+  border-radius: var(--radius-full);
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid #E0E7FF;
 }
 
 .course-card:nth-child(2) .course-code-pill {
-  background: var(--neo-pink);
+  background: #FDF2F8;
+  color: #DB2777;
+  border-color: #FCE7F3;
 }
 
 .course-card:nth-child(3) .course-code-pill {
-  background: var(--neo-yellow);
+  background: #FFFBEB;
+  color: #D97706;
+  border-color: #FEF3C7;
 }
 
 .course-title {
   font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-main);
   margin-bottom: 0.35rem;
-  text-transform: uppercase;
 }
 
 .course-instructor {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .course-progress-section {
   margin-top: 1.25rem;
   padding-top: 0.85rem;
-  border-top: 2px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .course-progress-label {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-heading);
-  font-size: 0.76rem;
-  letter-spacing: 0.04em;
+  font-size: 0.74rem;
   color: var(--text-secondary);
   margin-bottom: 6px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .course-progress-bar {
   width: 100%;
-  height: 10px;
+  height: 6px;
   background: var(--bg-surface);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-full);
   overflow: hidden;
-  border: 2px solid var(--border);
-  box-shadow: 1px 1px 0px var(--border);
 }
 
 .course-progress-fill {
   height: 100%;
-  border-radius: 0;
+  border-radius: var(--radius-full);
   background: var(--primary);
+  transition: width 0.5s ease;
 }
 
 /* Timetable Grid */
@@ -191,66 +191,67 @@
 
 .timetable-day-col {
   background: var(--bg-surface);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   padding: 1rem;
-  border: 2px solid var(--border);
-  box-shadow: 3px 3px 0px var(--border);
+  border: 1px solid var(--border);
 }
 
 .timetable-day-header {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.78rem;
   text-align: center;
   padding-bottom: 0.65rem;
   margin-bottom: 0.85rem;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
   color: var(--text-main);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .timetable-slot {
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 0.85rem;
   margin-bottom: 0.75rem;
   font-size: 0.8rem;
-  box-shadow: 2px 2px 0px var(--border);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 .timetable-slot:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0px var(--border);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .timetable-slot .slot-time {
   font-family: var(--font-heading);
   color: var(--primary);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.72rem;
 }
 
 .timetable-slot .slot-title {
   font-family: var(--font-heading);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-main);
   margin: 3px 0;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
 }
 
 .timetable-slot .slot-room {
   color: var(--text-muted);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 @media (max-width: 1100px) {
   .courses-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .timetable-row-grid {
     grid-template-columns: 1fr;
   }
@@ -260,6 +261,7 @@
   .courses-grid {
     grid-template-columns: 1fr;
   }
+
   .student-banner {
     flex-direction: column;
     align-items: flex-start;

@@ -6,41 +6,55 @@ import {
   Lock,
   ArrowRight,
   ArrowLeft,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import ThemeSwitcher from './ThemeSwitcher';
+import { api } from '../../config/api';
 import '../css/LoginPage.css';
 
 const LoginPage = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('student@edumanage.edu');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const studentUser = {
-    email: 'student@edumanage.edu',
-    password: 'password123',
-    name: 'Alex Rivera',
-    role: 'student',
-    dashboard: '/student'
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onLoginSuccess) {
-      onLoginSuccess(studentUser);
-    }
-    navigate('/student');
-  };
+    setErrorMsg('');
+    setIsLoading(true);
 
-  const handleInstantDemo = () => {
-    if (onLoginSuccess) {
-      onLoginSuccess(studentUser);
+    try {
+      const res = await api.post('/auth/login', {
+        email: email.trim(),
+        password: password.trim()
+      });
+
+      if (res && res.user) {
+        sessionStorage.setItem('edumanage_current_user', JSON.stringify(res.user));
+        if (onLoginSuccess) {
+          onLoginSuccess(res.user);
+        }
+
+        if (res.user.role === 'student') {
+          navigate('/student');
+        } else if (res.user.role === 'teacher') {
+          navigate('/teacher@1234');
+        } else if (res.user.role === 'admin') {
+          navigate('/admin@1234');
+        } else {
+          navigate('/student');
+        }
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
     }
-    navigate('/student');
   };
 
   return (
-    <div className="login-page-container" data-style="neo-brutalism">
+    <div className="login-page-container">
       <div className="login-top-bar">
         <Link to="/landing" className="login-back-link">
           <ArrowLeft size={16} /> Campus Overview
@@ -59,20 +73,24 @@ const LoginPage = ({ onLoginSuccess }) => {
           <p>AUTHENTICATE TO ACCESS YOUR SCHOLAR DESK</p>
         </div>
 
-        {/* 1-Click Instant Demo Login */}
-        <div className="demo-preset-box">
-          <div className="demo-preset-text">
-            <strong>Ready for 1-Click Demo?</strong>
-            <span>Log in immediately as SCHOLAR (Alex Rivera)</span>
+        {errorMsg && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            color: '#ef4444',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{errorMsg}</span>
           </div>
-          <button 
-            type="button" 
-            className="demo-btn"
-            onClick={handleInstantDemo}
-          >
-            Instant Login <Sparkles size={12} style={{ display: 'inline', marginLeft: 4 }} />
-          </button>
-        </div>
+        )}
 
         {/* Authentication Form */}
         <form className="login-form" onSubmit={handleSubmit}>
@@ -84,9 +102,13 @@ const LoginPage = ({ onLoginSuccess }) => {
                 type="email" 
                 required
                 className="login-input"
-                placeholder="you@institution.edu"
+                placeholder="student@institution.edu"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errorMsg) setErrorMsg('');
+                }}
+                autoFocus
               />
             </div>
           </div>
@@ -99,9 +121,12 @@ const LoginPage = ({ onLoginSuccess }) => {
                 type="password" 
                 required
                 className="login-input"
-                placeholder="••••••••••••"
+                placeholder="Enter account password..."
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMsg) setErrorMsg('');
+                }}
               />
             </div>
           </div>
@@ -110,11 +135,17 @@ const LoginPage = ({ onLoginSuccess }) => {
             <label>
               <input type="checkbox" defaultChecked /> Remember me
             </label>
-            <a href="#forgot" onClick={(e) => e.preventDefault()}>Forgot password?</a>
+            <a href="#help" onClick={(e) => { e.preventDefault(); alert('Please contact your department faculty for student account password credentials.'); }}>
+              Need credentials help?
+            </a>
           </div>
 
-          <button type="submit" className="btn btn-primary login-submit-btn">
-            Sign In as Student <ArrowRight size={16} />
+          <button 
+            type="submit" 
+            className="btn btn-primary login-submit-btn"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Authenticating...' : 'Sign In as Student'} <ArrowRight size={16} />
           </button>
         </form>
 
@@ -123,7 +154,7 @@ const LoginPage = ({ onLoginSuccess }) => {
             <span>Explore </span>
             <Link to="/landing">Campus Overview & Architecture</Link>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Faculty & Admin portals: direct institutional routes (<code>/teacher@1234</code>, <code>/admin@1234</code>)
           </div>
         </div>

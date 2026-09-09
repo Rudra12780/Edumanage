@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   GraduationCap,
@@ -15,12 +15,15 @@ import '../css/Navbar.css';
 import ThemeSwitcher from './ThemeSwitcher';
 import { ADMIN_ROUTE, setAdminAuthorized } from '../../config/adminConfig';
 import { TEACHER_ROUTE, setTeacherAuthorized } from '../../config/teacherConfig';
+import { api } from '../../config/api';
 
 const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUser }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Derive active display role
   let activeRole = currentRole;
@@ -28,13 +31,42 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
   else if (location.pathname.includes('/teacher') || location.pathname === TEACHER_ROUTE || location.pathname.includes('/teacher@1234')) activeRole = 'teacher';
   else if (location.pathname.includes('/student')) activeRole = 'student';
 
-  const notifications = [
-    { id: 1, text: 'New assignment submitted for CS101', time: '5m ago' },
-    { id: 2, text: 'Tuition payment deadline approaching', time: '1h ago' },
-    { id: 3, text: 'Faculty meeting scheduled at 4:00 PM', time: '3h ago' },
-  ];
+  const fetchNavbarNotifications = async () => {
+    try {
+      const classCode = currentUser?.class_code || 'ALL';
+      const userId = currentUser?.id || 'anonymous';
+      const res = await api.get(`/notifications?classCode=${classCode}&userId=${userId}`);
+      if (res) {
+        setNotifications(res.notifications || []);
+        setUnreadCount(res.unreadCount || 0);
+      }
+    } catch (e) {
+      // silently handle if offline
+    }
+  };
+
+  useEffect(() => {
+    fetchNavbarNotifications();
+    const interval = setInterval(fetchNavbarNotifications, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.class_code, currentUser?.id]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.post('/notifications/mark-all-read', {
+        userId: currentUser?.id || 'anonymous',
+        classCode: currentUser?.class_code || 'ALL'
+      });
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+    } catch (e) {}
+  };
 
   const handleLogout = () => {
+    sessionStorage.removeItem('edumanage_current_user');
+    sessionStorage.removeItem('edumanage_teacher_auth');
+    sessionStorage.removeItem('edumanage_admin_auth');
     setAdminAuthorized(false);
     setTeacherAuthorized(false);
     navigate('/');
@@ -42,10 +74,20 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
 
   const userDisplayName = currentUser?.name || (
     activeRole === 'admin' ? 'Dr. Sarah Jenkins' :
-    activeRole === 'teacher' ? 'Prof. David Miller' : 'Alex Rivera'
+    activeRole === 'teacher' ? 'Faculty Instructor' : 'Scholar Student'
   );
 
   const userInitial = userDisplayName.charAt(0);
+
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Just now';
+    const d = new Date(dateStr);
+    const diff = Math.floor((new Date() - d) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return d.toLocaleDateString();
+  };
 
   return (
     <header className="em-navbar">
@@ -117,29 +159,50 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
             aria-label="Notifications"
           >
             <Bell size={18} />
-            <span className="em-badge-dot"></span>
+            {unreadCount > 0 && <span className="em-badge-dot"></span>}
           </button>
 
           {showNotifications && (
             <div className="em-dropdown-popover">
               <div className="em-dropdown-header">
-                <h4>Notifications</h4>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}>
-                  Mark all read
-                </span>
+                <h4>Notifications {unreadCount > 0 ? `(${unreadCount} new)` : ''}</h4>
+                {notifications.length > 0 && (
+                  <span 
+                    style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={handleMarkAllRead}
+                  >
+                    Mark all read
+                  </span>
+                )}
               </div>
               <div className="em-dropdown-items">
-                {notifications.map((item) => (
-                  <div key={item.id} className="em-dropdown-item">
-                    <div className="notif-icon">
-                      <Bell size={14} />
-                    </div>
-                    <div>
-                      <div className="notif-text">{item.text}</div>
-                      <div className="notif-time">{item.time}</div>
-                    </div>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    No announcements yet.
                   </div>
-                ))}
+                ) : (
+                  notifications.map((item) => (
+                    <div key={item.id} className={`em-dropdown-item ${!item.is_read ? 'unread' : ''}`}>
+                      <div className="notif-icon">
+                        <Bell size={14} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: 2 }}>
+                          {item.title}
+                        </div>
+                        <div className="notif-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          {item.message}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>
+                            {item.sender_name} • Class {item.target_class}
+                          </span>
+                          <span className="notif-time">{formatTimeAgo(item.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -168,42 +231,27 @@ const Navbar = ({ toggleSidebar, currentRole = 'admin', onRoleChange, currentUse
                 <h4>My Account</h4>
               </div>
               <div style={{ padding: '0.5rem' }}>
+                <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Signed in as: <strong>{userDisplayName}</strong>
+                </div>
+                <div style={{ borderTop: '1px solid var(--border)', margin: '0.5rem 0' }}></div>
                 <button 
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    navigate('/landing');
-                  }} 
+                  onClick={handleLogout}
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '8px', 
                     width: '100%', 
-                    padding: '8px 12px', 
+                    padding: '0.5rem 0.75rem', 
+                    background: 'none', 
+                    border: 'none', 
+                    color: 'var(--danger)', 
+                    cursor: 'pointer',
                     fontSize: '0.85rem',
-                    borderRadius: '6px',
-                    color: 'var(--text-main)'
+                    fontWeight: 600
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <GraduationCap size={15} /> Campus Architecture
-                </button>
-                <button 
-                  onClick={handleLogout} 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    width: '100%', 
-                    padding: '8px 12px', 
-                    fontSize: '0.85rem',
-                    borderRadius: '6px',
-                    color: 'var(--danger)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--danger-light)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  <LogOut size={15} /> Sign Out
+                  <LogOut size={14} /> Log Out
                 </button>
               </div>
             </div>

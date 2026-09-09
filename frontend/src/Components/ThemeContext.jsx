@@ -5,8 +5,8 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('edumanage-theme');
-    if (saved === 'light') return 'light';
-    return 'dark'; // Default to Neo-Brutalist Obsidian Dark Mode
+    if (saved === 'dark') return 'dark';
+    return 'light'; // Default to Clean Daylight Theme
   });
 
   useEffect(() => {

@@ -1,17 +1,36 @@
 /* =========================================================
-   ADMIN DASHBOARD STYLES (NEO-BRUTALIST ARCHITECTURAL CONSOLE)
+   ADMIN DASHBOARD STYLES (CLEAN & SIMPLE SAAS CONSOLE)
    ========================================================= */
+.dashboard-wrapper {
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-main);
+  position: relative;
+}
+
 .dashboard-layout {
   display: flex;
-  min-height: calc(100vh - 65px);
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - 65px);
+  overflow: hidden;
   background: var(--bg-main);
+  position: relative;
 }
 
 .dashboard-main {
   flex: 1;
+  min-width: 0;
+  height: 100%;
   padding: 2rem 2.5rem;
   overflow-y: auto;
-  max-width: 1600px;
+  overflow-x: hidden;
+  max-width: 100%;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
@@ -21,23 +40,22 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 1.25rem;
 }
 
 .dashboard-header-title h1 {
   font-family: var(--font-heading);
-  font-size: 1.85rem;
+  font-size: 1.65rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   color: var(--text-main);
 }
 
 .dashboard-header-title p {
   color: var(--text-muted);
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 500;
   margin-top: 4px;
 }
 
@@ -66,16 +84,16 @@
 /* Department Distribution Card */
 .content-card {
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  box-shadow: 4px 4px 0px var(--border);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 .content-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px var(--border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .content-card-header {
@@ -83,16 +101,15 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.25rem;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 0.85rem;
 }
 
 .content-card-header h3 {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-main);
 }
 
@@ -116,48 +133,46 @@
 
 .dept-name {
   font-family: var(--font-heading);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.85rem;
   color: var(--text-main);
 }
 
 .dept-count {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .dept-progress-track {
   width: 100%;
-  height: 10px;
+  height: 6px;
   background: var(--bg-surface);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-full);
   overflow: hidden;
-  border: 2px solid var(--border);
-  box-shadow: 1px 1px 0px var(--border);
 }
 
 .dept-progress-fill {
   height: 100%;
-  border-radius: 0;
+  border-radius: var(--radius-full);
   background: var(--primary);
-  transition: width 0.4s ease;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dept-item:nth-child(1) .dept-progress-fill {
-  background: #38BDF8;
+  background: #3B82F6;
 }
 
 .dept-item:nth-child(2) .dept-progress-fill {
-  background: #A78BFA;
+  background: #8B5CF6;
 }
 
 .dept-item:nth-child(3) .dept-progress-fill {
-  background: #4ADE80;
+  background: #10B981;
 }
 
 .dept-item:nth-child(4) .dept-progress-fill {
-  background: #FFE600;
+  background: #F59E0B;
 }
 
 /* Activity Feed */
@@ -180,34 +195,32 @@
 }
 
 .activity-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-xs);
-  border: 1px solid #000000;
-  margin-top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
   flex-shrink: 0;
   background: var(--primary);
 }
 
-.activity-dot.purple { background: #A78BFA; }
-.activity-dot.blue { background: #38BDF8; }
-.activity-dot.green { background: #4ADE80; }
-.activity-dot.amber { background: #FFE600; }
+.activity-dot.purple { background: #8B5CF6; }
+.activity-dot.blue { background: #3B82F6; }
+.activity-dot.green { background: #10B981; }
+.activity-dot.amber { background: #F59E0B; }
 
 .activity-content {
   flex: 1;
 }
 
 .activity-title {
-  font-family: var(--font-heading);
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: 0.86rem;
+  font-weight: 600;
   color: var(--text-main);
 }
 
 .activity-desc {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--text-secondary);
   margin-top: 2px;
   line-height: 1.4;
@@ -215,7 +228,7 @@
 
 .activity-time {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-muted);
   margin-top: 4px;
 }

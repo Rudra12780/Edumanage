@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -19,8 +19,7 @@ import '../css/Sidebar.css';
 import { ADMIN_ROUTE } from '../../config/adminConfig';
 import { TEACHER_ROUTE } from '../../config/teacherConfig';
 
-const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect }) => {
-  const navigate = useNavigate();
+const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab = 'overview', onTabSelect }) => {
   const location = useLocation();
 
   // Determine current active section
@@ -31,23 +30,24 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
 
   const menuConfigs = {
     admin: [
-      { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, path: ADMIN_ROUTE },
-      { id: 'students', label: 'Students Directory', icon: GraduationCap, badge: '2,840' },
-      { id: 'teachers', label: 'Faculty & Teachers', icon: Users, badge: '142' },
-      { id: 'courses', label: 'Academic Courses', icon: BookOpen, badge: '38' },
+      { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
+      { id: 'students', label: 'Students Directory', icon: GraduationCap, badge: '6' },
+      { id: 'teachers', label: 'Faculty & Teachers', icon: Users, badge: '4' },
+      { id: 'courses', label: 'Academic Courses', icon: BookOpen, badge: '5' },
       { id: 'finance', label: 'Tuition & Finance', icon: DollarSign },
       { id: 'settings', label: 'System Settings', icon: Settings },
     ],
     teacher: [
-      { id: 'overview', label: 'Teacher Overview', icon: LayoutDashboard, path: TEACHER_ROUTE },
+      { id: 'overview', label: 'Teacher Overview', icon: LayoutDashboard },
       { id: 'classes', label: 'Assigned Classes', icon: BookOpen, badge: '4' },
+      { id: 'students', label: 'Class Students Roster', icon: Users },
       { id: 'attendance', label: 'Mark Attendance', icon: CalendarCheck },
       { id: 'grading', label: 'Grades & Reviews', icon: FileSpreadsheet, badge: '18' },
       { id: 'timetable', label: 'Lecture Schedule', icon: Clock },
       { id: 'messages', label: 'Student Inquiries', icon: MessageSquareText, badge: '3' },
     ],
     student: [
-      { id: 'overview', label: 'Student Dashboard', icon: LayoutDashboard, path: '/student' },
+      { id: 'overview', label: 'Student Dashboard', icon: LayoutDashboard },
       { id: 'courses', label: 'Enrolled Courses', icon: BookOpen, badge: '6' },
       { id: 'assignments', label: 'My Assignments', icon: CalendarCheck, badge: '3' },
       { id: 'grades', label: 'Grades & GPA', icon: Award },
@@ -62,9 +62,6 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
     if (onTabSelect) {
       onTabSelect(item.id);
     }
-    if (item.path) {
-      navigate(item.path);
-    }
   };
 
   return (
@@ -78,6 +75,7 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
             return (
               <button
                 key={item.id}
+                type="button"
                 className={`em-sidebar-link ${isSelected ? 'active' : ''}`}
                 onClick={() => handleItemClick(item)}
                 title={item.label}
@@ -98,8 +96,8 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab, onTabSelect })
               <ShieldCheck size={18} />
             </div>
             <div className="em-role-meta">
-              <span className="title">{role} Access</span>
-              <span className="sub">EduManage v2.4</span>
+              <span className="title">{role} Portal</span>
+              <span className="sub">EduManage System</span>
             </div>
           </div>
         </div>

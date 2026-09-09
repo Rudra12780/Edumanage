@@ -24,7 +24,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.25;
-  letter-spacing: 0.03em;
+  letter-spacing: -0.01em;
 }
 
 a {
@@ -45,6 +45,171 @@ input, select, textarea {
   font-size: 0.92rem;
 }
 
+/* =========================================================
+   GLOBAL MODAL & FORM CONTROLS (UNIVERSAL)
+   ========================================================= */
+.em-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 1.5rem;
+}
+
+.em-modal-card,
+.em-modal-content {
+  background: var(--bg-card, #ffffff) !important;
+  border: 1px solid var(--border, #cbd5e1) !important;
+  border-radius: var(--radius-xl, 16px) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3) !important;
+  width: 100% !important;
+  max-width: 560px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  color: var(--text-main, #0f172a) !important;
+}
+
+.em-modal-header {
+  padding: 1.25rem 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid var(--border, #e2e8f0) !important;
+  background: var(--bg-card, #ffffff) !important;
+}
+
+.em-modal-header h3 {
+  font-family: var(--font-heading, inherit) !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  color: var(--text-main, #0f172a) !important;
+  margin: 0 !important;
+}
+
+.em-modal-close-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-muted, #64748b) !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.em-modal-close-btn:hover {
+  background: var(--bg-surface, #f1f5f9) !important;
+  color: var(--text-main, #0f172a) !important;
+}
+
+.em-modal-body {
+  padding: 1.5rem !important;
+  max-height: 75vh !important;
+  overflow-y: auto !important;
+  background: var(--bg-card, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+}
+
+.em-modal-footer {
+  padding: 1.25rem 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  border-top: 1px solid var(--border, #e2e8f0) !important;
+  background: var(--bg-surface, #f8fafc) !important;
+}
+
+/* Form Styles */
+.form-group,
+.em-form-group {
+  margin-bottom: 1.2rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+.form-group > div {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.form-group label,
+.em-form-group label {
+  display: block !important;
+  font-family: var(--font-heading, inherit) !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary, #334155) !important;
+  margin-bottom: 0.45rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+.form-control,
+.em-form-input,
+.em-form-select,
+.em-form-textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  padding: 0.68rem 0.95rem !important;
+  background: var(--input-bg, #f8fafc) !important;
+  border: 1.5px solid var(--input-border, #cbd5e1) !important;
+  border-radius: 8px !important;
+  color: var(--text-main, #0f172a) !important;
+  font-family: inherit !important;
+  font-size: 0.92rem !important;
+  outline: none !important;
+  min-height: 44px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.form-control:focus,
+.em-form-input:focus,
+.em-form-select:focus,
+.em-form-textarea:focus {
+  border-color: var(--primary, #4f46e5) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18) !important;
+  background: var(--bg-card, #ffffff) !important;
+}
+
+.form-control:disabled {
+  background: var(--bg-surface, #f1f5f9) !important;
+  color: var(--text-muted, #94a3b8) !important;
+  cursor: not-allowed !important;
+  opacity: 0.85 !important;
+}
+
+select.form-control,
+select.em-form-select {
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1rem !important;
+  padding-right: 2.2rem !important;
+  cursor: pointer !important;
+}
+
+textarea.form-control,
+textarea.em-form-textarea {
+  min-height: 90px !important;
+  resize: vertical !important;
+}
+
+.form-group small {
+  font-size: 0.75rem !important;
+  color: var(--text-muted, #64748b) !important;
+  margin-top: 0.35rem !important;
+  line-height: 1.4 !important;
+}
+
 /* Classical Architectural Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -60,3 +225,4 @@ input, select, textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+

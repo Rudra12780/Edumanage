@@ -62,7 +62,7 @@ const LandingPage = () => {
   const currentDetails = roleDetails[activeRoleTab];
 
   return (
-    <div className="landing-page-container" data-style="neo-brutalism">
+    <div className="landing-page-container">
       {/* Navigation Header */}
       <nav className="landing-nav">
         <div className="landing-brand">

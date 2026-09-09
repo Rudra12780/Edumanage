@@ -11,24 +11,27 @@ import { TEACHER_ROUTE } from './config/teacherConfig';
 import './App.css';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Dr. Sarah Jenkins',
-    role: 'admin',
-    email: 'admin@edumanage.edu'
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = sessionStorage.getItem('edumanage_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
   });
 
   const handleRoleChange = (newRole) => {
     if (newRole === 'admin') {
       setCurrentUser({ name: 'Dr. Sarah Jenkins', role: 'admin', email: 'admin@edumanage.edu' });
-    } else if (newRole === 'teacher') {
-      setCurrentUser({ name: 'Prof. David Miller', role: 'teacher', email: 'teacher@edumanage.edu' });
-    } else if (newRole === 'student') {
-      setCurrentUser({ name: 'Alex Rivera', role: 'student', email: 'student@edumanage.edu' });
     }
   };
 
   const handleLoginSuccess = (userObj) => {
     setCurrentUser(userObj);
+    if (userObj) {
+      sessionStorage.setItem('edumanage_current_user', JSON.stringify(userObj));
+    }
   };
 
   return (

@@ -1,114 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   GraduationCap,
   BookOpen,
-  DollarSign,
   Plus,
   Download,
-  Filter,
   CheckCircle2,
-  Info
+  Info,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import StatCard from './StatCard';
 import DataTable from './DataTable';
 import Modal from './Modal';
+import { api } from '../../config/api';
 import '../css/AdminDashboard.css';
 
 const AdminDashboard = ({ currentUser, onRoleChange }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [statusToast, setStatusToast] = useState(null);
   const [showPolicyGuide, setShowPolicyGuide] = useState(true);
 
-  // Initial State for Students
-  const [students, setStudents] = useState([
-    { id: 'STU-1092', name: 'Sophia Chen', email: 'sophia.c@edumanage.edu', dept: 'Computer Science', year: 'Year 3', gpa: '3.92', status: 'Active' },
-    { id: 'STU-1093', name: 'Liam Walker', email: 'liam.w@edumanage.edu', dept: 'Mechanical Eng.', year: 'Year 2', gpa: '3.64', status: 'Active' },
-    { id: 'STU-1094', name: 'Emma Watson', email: 'emma.w@edumanage.edu', dept: 'Business Admin', year: 'Year 4', gpa: '3.88', status: 'Active' },
-    { id: 'STU-1095', name: 'Noah Miller', email: 'noah.m@edumanage.edu', dept: 'Data Science', year: 'Year 1', gpa: '3.45', status: 'Probation' },
-    { id: 'STU-1096', name: 'Olivia Brown', email: 'olivia.b@edumanage.edu', dept: 'Biotechnology', year: 'Year 3', gpa: '3.97', status: 'Active' },
-    { id: 'STU-1097', name: 'Lucas Scott', email: 'lucas.s@edumanage.edu', dept: 'Computer Science', year: 'Year 2', gpa: '3.21', status: 'Inactive' },
-  ]);
+  const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [courses, setCourses] = useState([]);
 
-  const handleStatusChange = (studentId, newStatus) => {
-    setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
-        return { ...s, status: newStatus };
-      }
-      return s;
-    }));
+  // Error messages for modals
+  const [teacherError, setTeacherError] = useState('');
+  const [studentError, setStudentError] = useState('');
 
-    const student = students.find(s => s.id === studentId);
-    const studentName = student ? student.name : 'Student';
-    let detail = '';
-    if (newStatus === 'Active') {
-      detail = 'Full LMS & campus privileges active. Enrolled in courses.';
-    } else if (newStatus === 'Probation') {
-      detail = 'Academic standing under review. Counselor advisory sessions required.';
-    } else if (newStatus === 'Inactive') {
-      detail = 'Academic enrollment paused. LMS portal and library access suspended.';
-    }
-
-    setStatusToast({
-      status: newStatus,
-      message: `${studentName} marked as ${newStatus}. ${detail}`
-    });
-
-    setTimeout(() => {
-      setStatusToast(null);
-    }, 5000);
-  };
-
-  // Initial State for Faculty
-  const [teachers] = useState([
-    { id: 'FAC-401', name: 'Dr. Robert Vance', dept: 'Computer Science', courses: 'CS101, Algorithms', students: 120, status: 'Active' },
-    { id: 'FAC-402', name: 'Prof. David Miller', dept: 'Data Science', courses: 'Machine Learning, Stats', students: 95, status: 'Active' },
-    { id: 'FAC-403', name: 'Dr. Clara Oswald', dept: 'Biotechnology', courses: 'Genetics, Cell Bio', students: 80, status: 'On Leave' },
-    { id: 'FAC-404', name: 'Prof. Marcus Brody', dept: 'History & Arts', courses: 'World History, Archaeology', students: 110, status: 'Active' },
-  ]);
-
-  // Initial State for Courses
-  const [courses] = useState([
-    { code: 'CS101', name: 'Introduction to Computer Systems', dept: 'Computer Science', credits: 4, enrolled: 88, max: 90 },
-    { code: 'DS204', name: 'Statistical Data Analysis', dept: 'Data Science', credits: 3, enrolled: 65, max: 70 },
-    { code: 'BIO302', name: 'Molecular Genetics & Genomics', dept: 'Biotechnology', credits: 4, enrolled: 52, max: 60 },
-    { code: 'BUS105', name: 'Principles of Financial Accounting', dept: 'Business', credits: 3, enrolled: 114, max: 120 },
-  ]);
+  // New Faculty Form State
+  const [newTeacher, setNewTeacher] = useState({
+    name: '',
+    email: '',
+    dept: 'Computer Science',
+    courses: 'CS101: Systems Architecture',
+    status: 'Active',
+    password: ''
+  });
 
   // New Student Form State
   const [newStudent, setNewStudent] = useState({
     name: '',
     email: '',
+    roll: '',
     dept: 'Computer Science',
+    class_code: 'CS101',
     year: 'Year 1',
     gpa: '3.50',
-    status: 'Active'
+    status: 'Active',
+    password: ''
   });
 
-  const handleAddStudent = (e) => {
+  const fetchData = async () => {
+    try {
+      const [tList, sList, cList] = await Promise.all([
+        api.get('/admin/teachers').catch(() => []),
+        api.get('/admin/students').catch(() => []),
+        api.get('/admin/courses').catch(() => [])
+      ]);
+      setTeachers(tList || []);
+      setStudents(sList || []);
+      setCourses(cList || []);
+    } catch (err) {
+      console.error('Failed to load administrative directory data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleStatusChange = async (studentId, newStatus) => {
+    try {
+      await api.patch(`/admin/students/${studentId}/status`, { status: newStatus });
+      setStudents(prev => prev.map(s => (s.id === studentId ? { ...s, status: newStatus } : s)));
+
+      const student = students.find(s => s.id === studentId);
+      const studentName = student ? student.name : 'Student';
+      let detail = '';
+      if (newStatus === 'Active') {
+        detail = 'Full LMS & campus privileges active. Enrolled in courses.';
+      } else if (newStatus === 'Probation') {
+        detail = 'Academic standing under review. Counselor advisory sessions required.';
+      } else if (newStatus === 'Inactive') {
+        detail = 'Academic enrollment paused. LMS portal and library access suspended.';
+      }
+
+      setStatusToast({
+        status: newStatus,
+        message: `${studentName} marked as ${newStatus}. ${detail}`
+      });
+
+      setTimeout(() => {
+        setStatusToast(null);
+      }, 5000);
+    } catch (err) {
+      alert('Failed to update student status: ' + err.message);
+    }
+  };
+
+  const handleAddTeacher = async (e) => {
     e.preventDefault();
-    if (!newStudent.name || !newStudent.email) return;
+    setTeacherError('');
 
-    const created = {
-      id: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
-      ...newStudent
-    };
+    if (!newTeacher.name || !newTeacher.email || !newTeacher.password) {
+      setTeacherError('Name, institutional email, and password are required.');
+      return;
+    }
 
-    setStudents([created, ...students]);
-    setIsAddModalOpen(false);
-    setNewStudent({
-      name: '',
-      email: '',
-      dept: 'Computer Science',
-      year: 'Year 1',
-      gpa: '3.50',
-      status: 'Active'
-    });
+    try {
+      await api.post('/admin/teachers', newTeacher);
+      const updated = await api.get('/admin/teachers');
+      setTeachers(updated || []);
+      setIsAddTeacherModalOpen(false);
+      setNewTeacher({
+        name: '',
+        email: '',
+        dept: 'Computer Science',
+        courses: 'CS101: Systems Architecture',
+        status: 'Active',
+        password: ''
+      });
+
+      setStatusToast({
+        status: 'Active',
+        message: `Faculty member ${newTeacher.name} registered with unique password!`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      setTeacherError(err.message || 'Invalid or already used password.');
+    }
+  };
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    setStudentError('');
+
+    if (!newStudent.name || !newStudent.email || !newStudent.password) {
+      setStudentError('Name, institutional email, and password are required.');
+      return;
+    }
+
+    try {
+      await api.post('/admin/students', newStudent);
+      const updated = await api.get('/admin/students');
+      setStudents(updated || []);
+      setIsAddModalOpen(false);
+      setNewStudent({
+        name: '',
+        email: '',
+        roll: '',
+        dept: 'Computer Science',
+        class_code: 'CS101',
+        year: 'Year 1',
+        gpa: '3.50',
+        status: 'Active',
+        password: ''
+      });
+
+      setStatusToast({
+        status: 'Active',
+        message: `Student ${newStudent.name} registered with unique password!`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      setStudentError(err.message || 'Invalid or already used password.');
+    }
   };
 
   const studentColumns = [
@@ -122,11 +186,13 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
         </div>
       )
     },
+    { header: 'Roll No', accessor: 'roll', width: '100px' },
+    { header: 'Class', accessor: 'class_code', width: '90px' },
     { header: 'Department', accessor: 'dept' },
-    { header: 'Year', accessor: 'year', width: '100px' },
-    { header: 'GPA', accessor: 'gpa', width: '90px' },
+    { header: 'Year', accessor: 'year', width: '90px' },
+    { header: 'GPA', accessor: 'gpa', width: '80px' },
     {
-      header: 'STATUS',
+      header: 'Status',
       accessor: 'status',
       width: '150px',
       render: (row) => {
@@ -139,12 +205,12 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
             <select
               value={row.status}
               onChange={(e) => handleStatusChange(row.id, e.target.value)}
-              className={`status-neo-select ${statusStyleClass}`}
+              className={`status-pill-select ${statusStyleClass}`}
               title="Click to change student status: Active, Probation, or Inactive"
             >
-              <option value="Active" style={{ background: '#141418', color: '#4ADE80', fontWeight: '800' }}>ACTIVE</option>
-              <option value="Probation" style={{ background: '#141418', color: '#FFE600', fontWeight: '800' }}>PROBATION</option>
-              <option value="Inactive" style={{ background: '#141418', color: '#FF6584', fontWeight: '800' }}>INACTIVE</option>
+              <option value="Active">🟢 Active</option>
+              <option value="Probation">🟡 Probation</option>
+              <option value="Inactive">🔴 Inactive</option>
             </select>
           </div>
         );
@@ -154,7 +220,15 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
 
   const teacherColumns = [
     { header: 'Faculty ID', accessor: 'id', width: '120px' },
-    { header: 'Faculty Name', accessor: 'name' },
+    {
+      header: 'Faculty Name',
+      render: (row) => (
+        <div>
+          <strong style={{ display: 'block', color: 'var(--text-main)' }}>{row.name}</strong>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.email}</span>
+        </div>
+      )
+    },
     { header: 'Department', accessor: 'dept' },
     { header: 'Courses Assigned', accessor: 'courses' },
     { header: 'Total Students', accessor: 'students', width: '130px' },
@@ -177,9 +251,9 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
       header: 'Capacity',
       render: (row) => (
         <div>
-          <span>{row.enrolled} / {row.max} enrolled</span>
+          <span>{row.enrolled || 0} / {row.max || 60} enrolled</span>
           <div style={{ height: 5, background: 'var(--bg-surface)', borderRadius: 3, marginTop: 4, overflow: 'hidden' }}>
-            <div style={{ width: `${(row.enrolled / row.max) * 100}%`, height: '100%', background: 'var(--primary)' }}></div>
+            <div style={{ width: `${Math.min(100, ((row.enrolled || 0) / (row.max || 60)) * 100)}%`, height: '100%', background: 'var(--primary)' }}></div>
           </div>
         </div>
       )
@@ -187,7 +261,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
   ];
 
   return (
-    <div data-style="neo-brutalism">
+    <div className="dashboard-wrapper">
       <Navbar
         toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
         currentRole="admin"
@@ -207,157 +281,125 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
           {/* Header Title Bar */}
           <div className="dashboard-header">
             <div className="dashboard-header-title">
-              <h1>⚡ Institutional Command Center</h1>
-              <p>Neo-Brutalist University Oversight • Faculty Registers, Endowments & Student Records</p>
+              <h1>
+                {activeTab === 'overview' && '⚡ Institutional Command Center'}
+                {activeTab === 'students' && '🎓 Student Directory & Academic Status'}
+                {activeTab === 'teachers' && '👥 Faculty & Teaching Staff Directory'}
+                {activeTab === 'courses' && '📚 Campus Course Catalog & Syllabi'}
+                {activeTab === 'finance' && '💳 Tuition & Institutional Finance'}
+                {activeTab === 'settings' && '⚙️ System Configuration & Policies'}
+              </h1>
+              <p>
+                {activeTab === 'overview' && 'Comprehensive Campus Oversight • Faculty Registers, Endowments & Student Records'}
+                {activeTab === 'students' && 'Manage student enrollments, academic probation workflows, and active records'}
+                {activeTab === 'teachers' && 'Faculty members, department assignments, and instructional directories'}
+                {activeTab === 'courses' && 'Accredited degree courses, enrollment quotas, and syllabus tracks'}
+                {activeTab === 'finance' && 'Fiscal tuition collections, financial ledger accounts, and endowments'}
+                {activeTab === 'settings' && 'Platform governance, authentication rules, and institutional defaults'}
+              </p>
             </div>
 
             <div className="dashboard-header-actions">
               <button className="btn btn-secondary" onClick={() => window.print()}>
                 <Download size={16} /> Export Report
               </button>
-              <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
-                <Plus size={16} /> Add Student
-              </button>
+              {activeTab === 'teachers' ? (
+                <button className="btn btn-primary" onClick={() => { setTeacherError(''); setIsAddTeacherModalOpen(true); }}>
+                  <Plus size={16} /> Add Teacher
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => { setStudentError(''); setIsAddModalOpen(true); }}>
+                  <Plus size={16} /> Add Student
+                </button>
+              )}
             </div>
-          </div>
-
-          {/* Metric Stats Cards */}
-          <div className="dashboard-stats-grid">
-            <StatCard
-              title="Total Enrolled Students"
-              value={students.length + 2834}
-              subtitle="Across 6 Academic Faculties"
-              icon={GraduationCap}
-              colorScheme="indigo"
-              trend="+12.4% YoY"
-              trendType="up"
-            />
-            <StatCard
-              title="Active Faculty & Staff"
-              value="142"
-              subtitle="94% Full-Time Tenured"
-              icon={Users}
-              colorScheme="emerald"
-              trend="+4.2%"
-              trendType="up"
-            />
-            <StatCard
-              title="Accredited Courses"
-              value="38"
-              subtitle="98% Capacity Filled"
-              icon={BookOpen}
-              colorScheme="cyan"
-              trend="100% Active"
-              trendType="neutral"
-            />
-            <StatCard
-              title="Tuition Fees Collected"
-              value="$1,420,800"
-              subtitle="FY 2026 Academic Budget"
-              icon={DollarSign}
-              colorScheme="violet"
-              trend="+8.6% Target"
-              trendType="up"
-            />
           </div>
 
           {/* Dynamic Tab Views */}
           {activeTab === 'overview' && (
             <>
-              <div className="dashboard-grid-2col">
-                <DataTable
-                  title="Recent Student Registrations"
-                  subtitle="Latest admissions verified by the registrar"
-                  columns={studentColumns}
-                  data={students.slice(0, 5)}
-                  searchPlaceholder="Filter students..."
-                  actionButton={
-                    <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-                      <Plus size={14} /> Quick Add
-                    </button>
-                  }
+              {/* Metric Stats Cards */}
+              <div className="dashboard-stats-grid">
+                <StatCard
+                  title="Enrolled Students"
+                  value={students.length}
+                  subtitle="Active institutional scholars"
+                  icon={GraduationCap}
+                  colorScheme="indigo"
+                  trend={`${students.filter(s => s.status === 'Active').length} Active`}
+                  trendType="up"
                 />
+                <StatCard
+                  title="Faculty Members"
+                  value={teachers.length}
+                  subtitle="Academic instruction staff"
+                  icon={Users}
+                  colorScheme="cyan"
+                  trend={`${teachers.filter(t => t.status === 'Active').length} Active`}
+                  trendType="up"
+                />
+                <StatCard
+                  title="Accredited Courses"
+                  value={courses.length}
+                  subtitle="Degree curriculum offerings"
+                  icon={BookOpen}
+                  colorScheme="emerald"
+                  trend="Curriculum active"
+                  trendType="neutral"
+                />
+                <StatCard
+                  title="System Health"
+                  value="100%"
+                  subtitle="SQLite Database Persistent"
+                  icon={CheckCircle2}
+                  colorScheme="amber"
+                  trend="Online"
+                  trendType="up"
+                />
+              </div>
 
-                {/* Department Distribution Card */}
-                <div className="content-card">
-                  <div className="content-card-header">
-                    <h3>Faculty Enrollments</h3>
-                    <Filter size={16} color="var(--text-muted)" />
-                  </div>
-
+              {/* Campus Academic Faculties Overview */}
+              <div className="content-card" style={{ marginBottom: '2rem' }}>
+                <div className="content-card-header">
+                  <h3>Academic Program Distribution</h3>
+                  <span className="badge badge-indigo">Enrolled Scholars</span>
+                </div>
+                <div style={{ padding: '1rem 0' }}>
                   <div className="dept-list">
                     <div className="dept-item">
                       <div className="dept-info">
                         <span className="dept-name">Computer Science & AI</span>
-                        <span className="dept-count">1,120 Students (40%)</span>
+                        <span className="dept-count">
+                          {students.filter(s => s.dept === 'Computer Science').length} Students
+                        </span>
                       </div>
                       <div className="dept-progress-track">
-                        <div className="dept-progress-fill" style={{ width: '40%', background: '#4f46e5' }}></div>
+                        <div className="dept-progress-fill" style={{ width: '60%', background: '#4f46e5' }}></div>
                       </div>
                     </div>
 
                     <div className="dept-item">
                       <div className="dept-info">
-                        <span className="dept-name">Business & Finance</span>
-                        <span className="dept-count">740 Students (26%)</span>
+                        <span className="dept-name">Data Science & Analytics</span>
+                        <span className="dept-count">
+                          {students.filter(s => s.dept === 'Data Science').length} Students
+                        </span>
                       </div>
                       <div className="dept-progress-track">
-                        <div className="dept-progress-fill" style={{ width: '26%', background: '#06b6d4' }}></div>
+                        <div className="dept-progress-fill" style={{ width: '35%', background: '#06b6d4' }}></div>
                       </div>
                     </div>
 
                     <div className="dept-item">
                       <div className="dept-info">
-                        <span className="dept-name">Biotechnology & Health</span>
-                        <span className="dept-count">560 Students (20%)</span>
+                        <span className="dept-name">Business Administration</span>
+                        <span className="dept-count">
+                          {students.filter(s => s.dept === 'Business Admin').length} Students
+                        </span>
                       </div>
                       <div className="dept-progress-track">
-                        <div className="dept-progress-fill" style={{ width: '20%', background: '#10b981' }}></div>
+                        <div className="dept-progress-fill" style={{ width: '25%', background: '#10b981' }}></div>
                       </div>
-                    </div>
-
-                    <div className="dept-item">
-                      <div className="dept-info">
-                        <span className="dept-name">Mechanical Engineering</span>
-                        <span className="dept-count">420 Students (14%)</span>
-                      </div>
-                      <div className="dept-progress-track">
-                        <div className="dept-progress-fill" style={{ width: '14%', background: '#f59e0b' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* System Audit & Activity Log */}
-              <div className="content-card">
-                <div className="content-card-header">
-                  <h3>System Audit & Operational Events</h3>
-                  <span className="badge badge-indigo">Real-Time</span>
-                </div>
-                <div className="activity-feed">
-                  <div className="activity-item">
-                    <div className="activity-dot green"></div>
-                    <div className="activity-content">
-                      <div className="activity-title">Semester Grade Submission Window Opened</div>
-                      <div className="activity-desc">Instructors can now finalize evaluations for Mid-Term assessments.</div>
-                      <div className="activity-time">15 minutes ago • System Trigger</div>
-                    </div>
-                  </div>
-                  <div className="activity-item">
-                    <div className="activity-dot blue"></div>
-                    <div className="activity-content">
-                      <div className="activity-title">New Faculty Member Onboarded</div>
-                      <div className="activity-desc">Dr. Clara Oswald assigned to Molecular Genetics course curriculum.</div>
-                      <div className="activity-time">2 hours ago • Registrar Office</div>
-                    </div>
-                  </div>
-                  <div className="activity-item">
-                    <div className="activity-dot purple"></div>
-                    <div className="activity-content">
-                      <div className="activity-title">Campus Fee Reconciliation Complete</div>
-                      <div className="activity-desc">$142,000 processed in batch student tuition reconciliations.</div>
-                      <div className="activity-time">Yesterday at 5:30 PM • Finance Gateway</div>
                     </div>
                   </div>
                 </div>
@@ -434,8 +476,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                           <span className="badge-dot" style={{ background: '#10B981' }}></span> 🟢 ACTIVE STATUS
                         </div>
                         <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                          <strong>Privileges:</strong> Good academic standing (GPA ≥ 3.50). Full campus privileges enabled.<br />
-                          <strong>Workflows:</strong> Access to lecture halls, LMS coursework dropzone, live attendance tracking, library lending, and official transcript issue.
+                          <strong>Privileges:</strong> Good academic standing. Full campus privileges enabled.
                         </p>
                       </div>
 
@@ -444,8 +485,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                           <span className="badge-dot" style={{ background: '#F59E0B' }}></span> 🟡 PROBATION STATUS
                         </div>
                         <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                          <strong>Privileges:</strong> Academic alert flag (GPA &lt; 3.50 or attendance &lt; 75%).<br />
-                          <strong>Workflows:</strong> Still attends lectures and sits for examinations, but triggers mandatory weekly faculty mentoring. Restricted from student council.
+                          <strong>Privileges:</strong> Academic alert flag. Requires counselor advisory sessions.
                         </p>
                       </div>
 
@@ -454,8 +494,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                           <span className="badge-dot" style={{ background: '#EF4444' }}></span> 🔴 INACTIVE STATUS
                         </div>
                         <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                          <strong>Privileges:</strong> Registration suspended or semester withdrawal.<br />
-                          <strong>Workflows:</strong> LMS portal locked, coursework access blocked, and student ID pass deactivated. Re-activation requires Dean/Admin clearance.
+                          <strong>Privileges:</strong> Registration suspended. LMS portal locked.
                         </p>
                       </div>
                     </div>
@@ -499,9 +538,9 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                   subtitle={`Showing ${displayedStudents.length} of ${students.length} students • Select any dropdown in 'Status' to update instantly`}
                   columns={studentColumns}
                   data={displayedStudents}
-                  searchPlaceholder="Search by name, email, department..."
+                  searchPlaceholder="Search by name, email, roll number..."
                   actionButton={
-                    <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
+                    <button className="btn btn-primary btn-sm" onClick={() => { setStudentError(''); setIsAddModalOpen(true); }}>
                       <Plus size={14} /> Register New Student
                     </button>
                   }
@@ -517,6 +556,11 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
               columns={teacherColumns}
               data={teachers}
               searchPlaceholder="Search faculty members..."
+              actionButton={
+                <button className="btn btn-primary btn-sm" onClick={() => { setTeacherError(''); setIsAddTeacherModalOpen(true); }}>
+                  <Plus size={14} /> Register New Teacher
+                </button>
+              }
             />
           )}
 
@@ -542,6 +586,111 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
         </main>
       </div>
 
+      {/* Add Teacher Modal */}
+      <Modal
+        isOpen={isAddTeacherModalOpen}
+        onClose={() => setIsAddTeacherModalOpen(false)}
+        title="Register New Teacher / Faculty"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsAddTeacherModalOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAddTeacher}>Register Teacher</button>
+          </>
+        }
+      >
+        {teacherError && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            color: '#ef4444',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{teacherError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleAddTeacher}>
+          <div className="form-group">
+            <label>Teacher Full Name</label>
+            <input
+              type="text"
+              required
+              className="form-control"
+              placeholder="e.g. Prof. David Miller"
+              value={newTeacher.name}
+              onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Institutional Email</label>
+            <input
+              type="email"
+              required
+              className="form-control"
+              placeholder="david.m@edumanage.edu"
+              value={newTeacher.email}
+              onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Department</label>
+            <select
+              className="form-control"
+              value={newTeacher.dept}
+              onChange={(e) => setNewTeacher({ ...newTeacher, dept: e.target.value })}
+            >
+              <option value="Computer Science">Computer Science</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Business Admin">Business Admin</option>
+              <option value="Biotechnology">Biotechnology</option>
+              <option value="Mechanical Eng.">Mechanical Eng.</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Courses Assigned</label>
+            <input
+              type="text"
+              required
+              className="form-control"
+              placeholder="e.g. CS101: Systems Architecture, CS302"
+              value={newTeacher.courses}
+              onChange={(e) => setNewTeacher({ ...newTeacher, courses: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Lock size={14} /> Teacher Account Password (Unique, Manually Entered)
+            </label>
+            <input
+              type="password"
+              required
+              className="form-control"
+              placeholder="Enter unique password for this teacher..."
+              value={newTeacher.password}
+              onChange={(e) => {
+                setNewTeacher({ ...newTeacher, password: e.target.value });
+                if (teacherError) setTeacherError('');
+              }}
+            />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+              Must be unique across all accounts in the system. If duplicate, system will reject with "Invalid or already used password."
+            </small>
+          </div>
+        </form>
+      </Modal>
+
       {/* Add Student Modal */}
       <Modal
         isOpen={isAddModalOpen}
@@ -554,6 +703,25 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
           </>
         }
       >
+        {studentError && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            color: '#ef4444',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{studentError}</span>
+          </div>
+        )}
+
         <form onSubmit={handleAddStudent}>
           <div className="form-group">
             <label>Full Name</label>
@@ -577,6 +745,32 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
               value={newStudent.email}
               onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
             />
+          </div>
+
+          <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label>Roll Number</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. 22CS01"
+                value={newStudent.roll}
+                onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Class Code</label>
+              <select
+                className="form-control"
+                value={newStudent.class_code}
+                onChange={(e) => setNewStudent({ ...newStudent, class_code: e.target.value })}
+              >
+                <option value="CS101">CS101</option>
+                <option value="DS204">DS204</option>
+                <option value="CS302">CS302</option>
+                <option value="IT410">IT410</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
@@ -618,6 +812,26 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                 onChange={(e) => setNewStudent({ ...newStudent, gpa: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Lock size={14} /> Student Account Password (Unique, Manually Entered)
+            </label>
+            <input
+              type="password"
+              required
+              className="form-control"
+              placeholder="Enter unique password for student..."
+              value={newStudent.password}
+              onChange={(e) => {
+                setNewStudent({ ...newStudent, password: e.target.value });
+                if (studentError) setStudentError('');
+              }}
+            />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+              Must be unique across all accounts. If duplicate, system will show "Invalid or already used password."
+            </small>
           </div>
         </form>
       </Modal>

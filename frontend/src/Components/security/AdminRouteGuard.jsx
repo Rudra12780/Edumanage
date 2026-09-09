@@ -12,6 +12,7 @@ import {
 import { ADMIN_PASSWORD, ADMIN_ROUTE, isAdminAuthorized, setAdminAuthorized } from '../../config/adminConfig';
 import AdminDashboard from '../page/AdminDashboard';
 import ThemeSwitcher from '../page/ThemeSwitcher';
+import { api } from '../../config/api';
 import '../css/AdminRouteGuard.css';
 
 const AdminRouteGuard = ({ currentUser, onRoleChange }) => {
@@ -20,18 +21,37 @@ const AdminRouteGuard = ({ currentUser, onRoleChange }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successNotice, setSuccessNotice] = useState(false);
 
-  const handleAuthorize = (e) => {
+  const handleAuthorize = async (e) => {
     e.preventDefault();
-    if (passcode.trim() === ADMIN_PASSWORD) {
-      setErrorMsg('');
-      setSuccessNotice(true);
-      setAdminAuthorized(true);
-      setTimeout(() => {
-        setIsAuth(true);
-      }, 400);
-    } else {
-      setErrorMsg('ACCESS DENIED: Invalid administrator passcode. Verification failed.');
-      setSuccessNotice(false);
+    const entered = passcode.trim();
+
+    try {
+      const res = await api.post('/auth/admin-clearance', { passcode: entered });
+      if (res && res.authorized) {
+        setErrorMsg('');
+        setSuccessNotice(true);
+        setAdminAuthorized(true);
+        if (onRoleChange) {
+          onRoleChange('admin');
+        }
+        setTimeout(() => {
+          setIsAuth(true);
+        }, 400);
+      }
+    } catch (err) {
+      // Fallback to local check if offline
+      if (entered === ADMIN_PASSWORD) {
+        setErrorMsg('');
+        setSuccessNotice(true);
+        setAdminAuthorized(true);
+        if (onRoleChange) onRoleChange('admin');
+        setTimeout(() => {
+          setIsAuth(true);
+        }, 400);
+      } else {
+        setErrorMsg('ACCESS DENIED: Invalid administrator passcode. Verification failed.');
+        setSuccessNotice(false);
+      }
     }
   };
 
@@ -47,7 +67,7 @@ const AdminRouteGuard = ({ currentUser, onRoleChange }) => {
 
   // Otherwise, present the restricted Admin Security Gate
   return (
-    <div className="admin-guard-container" data-style="neo-brutalism">
+    <div className="admin-guard-container">
       <div className="admin-guard-topbar">
         <Link to="/" className="admin-guard-back-btn">
           <ArrowLeft size={16} /> EduManage Home
@@ -96,7 +116,7 @@ const AdminRouteGuard = ({ currentUser, onRoleChange }) => {
                 type="password"
                 required
                 className="admin-password-input"
-                placeholder="Enter edumanage password..."
+                placeholder="Enter administrator passcode..."
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
@@ -105,11 +125,6 @@ const AdminRouteGuard = ({ currentUser, onRoleChange }) => {
                 autoFocus
               />
             </div>
-          </div>
-
-          <div className="admin-hint-box">
-            <span>🛡️ Required Passcode: </span>
-            <span className="admin-hint-code">edumanage</span>
           </div>
 
           <button type="submit" className="admin-submit-btn">

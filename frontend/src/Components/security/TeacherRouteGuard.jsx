@@ -9,9 +9,10 @@ import {
   AlertTriangle,
   CheckCircle2
 } from 'lucide-react';
-import { TEACHER_PASSWORD, TEACHER_ROUTE, isTeacherAuthorized, setTeacherAuthorized } from '../../config/teacherConfig';
+import { TEACHER_ROUTE, isTeacherAuthorized, setTeacherAuthorized } from '../../config/teacherConfig';
 import TeacherDashboard from '../page/TeacherDashboard';
 import ThemeSwitcher from '../page/ThemeSwitcher';
+import { api } from '../../config/api';
 import '../css/AdminRouteGuard.css';
 
 const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
@@ -19,22 +20,51 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
   const [passcode, setPasscode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successNotice, setSuccessNotice] = useState(false);
+  const [activeTeacherUser, setActiveTeacherUser] = useState(() => {
+    const saved = sessionStorage.getItem('edumanage_current_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.role === 'teacher') return parsed;
+      } catch (e) {}
+    }
+    return currentUser;
+  });
 
-  const handleAuthorize = (e) => {
+  const handleAuthorize = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     const entered = passcode.trim();
-    if (entered && (entered === '1207' || entered === TEACHER_PASSWORD || entered.toLowerCase() === 'madam')) {
-      setErrorMsg('');
-      setSuccessNotice(true);
-      setTeacherAuthorized(true);
-      if (onRoleChange) {
-        onRoleChange('teacher');
+
+    if (!entered) return;
+
+    try {
+      const res = await api.post('/auth/teacher-clearance', { passcode: entered });
+
+      if (res && res.authorized) {
+        setErrorMsg('');
+        setSuccessNotice(true);
+        setTeacherAuthorized(true);
+
+        const teacherUser = res.user || {
+          name: 'Faculty Instructor',
+          role: 'teacher',
+          email: 'teacher@edumanage.edu'
+        };
+
+        setActiveTeacherUser(teacherUser);
+        sessionStorage.setItem('edumanage_current_user', JSON.stringify(teacherUser));
+
+        if (onRoleChange) {
+          onRoleChange('teacher');
+        }
+
+        setTimeout(() => {
+          setIsAuth(true);
+        }, 350);
       }
-      setTimeout(() => {
-        setIsAuth(true);
-      }, 350);
-    } else {
-      setErrorMsg('ACCESS DENIED: Invalid teacher passcode. Enter 1207.');
+    } catch (err) {
+      setErrorMsg(err.message || 'ACCESS DENIED: Invalid teacher credentials.');
       setSuccessNotice(false);
     }
   };
@@ -43,7 +73,7 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
   if (isAuth) {
     return (
       <TeacherDashboard 
-        currentUser={currentUser} 
+        currentUser={activeTeacherUser || currentUser} 
         onRoleChange={onRoleChange} 
       />
     );
@@ -51,7 +81,7 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
 
   // Otherwise, present the restricted Faculty Security Gate
   return (
-    <div className="admin-guard-container" data-style="neo-brutalism">
+    <div className="admin-guard-container">
       <div className="admin-guard-topbar">
         <Link to="/" className="admin-guard-back-btn">
           <ArrowLeft size={16} /> Student Login
@@ -72,7 +102,7 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
           </div>
           <h1 className="admin-guard-title">TEACHER ACCESS GATE</h1>
           <p className="admin-guard-subtitle">
-            Enter Teacher Passcode (1207) to access instructional desk
+            Enter your assigned teacher password to unlock faculty desk
           </p>
         </div>
 
@@ -92,7 +122,7 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
 
         <form className="admin-guard-form" onSubmit={handleAuthorize}>
           <div className="admin-field-group">
-            <label htmlFor="teacher-passcode-input">Teacher Passcode</label>
+            <label htmlFor="teacher-passcode-input">Teacher Password / Clearance Key</label>
             <div className="admin-input-wrapper">
               <Lock size={18} className="admin-input-icon" />
               <input 
@@ -100,7 +130,7 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
                 type="password"
                 required
                 className="admin-password-input"
-                placeholder="Enter passcode 1207..."
+                placeholder="Enter your assigned faculty password..."
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
@@ -109,11 +139,6 @@ const TeacherRouteGuard = ({ currentUser, onRoleChange }) => {
                 autoFocus
               />
             </div>
-          </div>
-
-          <div className="admin-hint-box">
-            <span>🛡️ Required Passcode: </span>
-            <span className="admin-hint-code">1207</span>
           </div>
 
           <button type="submit" className="admin-submit-btn">

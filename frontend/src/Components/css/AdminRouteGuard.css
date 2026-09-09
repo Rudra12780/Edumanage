@@ -1,0 +1,275 @@
+/* =========================================================
+   NEO-BRUTALIST ACCESS SECURITY GATE STYLES
+   ========================================================= */
+
+.admin-guard-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-main);
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-family);
+}
+
+.admin-guard-topbar {
+  position: absolute;
+  top: 1.5rem;
+  left: 2rem;
+  right: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.admin-guard-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0px var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-guard-back-btn:hover {
+  background: var(--bg-surface-hover);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px var(--border);
+}
+
+.admin-guard-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  box-shadow: 6px 6px 0px var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2.5rem 2rem;
+  position: relative;
+  z-index: 5;
+  margin-top: 2rem;
+}
+
+.admin-security-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.95rem;
+  background: var(--primary);
+  color: #000000;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0px var(--border);
+  margin-bottom: 1.5rem;
+  border-radius: var(--radius-xs);
+}
+
+.admin-guard-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.admin-guard-icon-box {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 1.25rem;
+  background: var(--primary);
+  border: 2px solid var(--border);
+  box-shadow: 4px 4px 0px var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: #000000;
+}
+
+.admin-guard-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.5rem;
+}
+
+.admin-guard-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.admin-guard-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0px var(--border);
+}
+
+.admin-guard-alert.error {
+  background: #FF6584;
+  color: #FFFFFF;
+}
+
+.admin-guard-alert.info {
+  background: #38BDF8;
+  color: #000000;
+}
+
+.admin-guard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-field-group label {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.admin-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-input-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.admin-password-input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: 2px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px var(--border);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.admin-password-input:focus {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0px var(--primary);
+}
+
+.admin-hint-box {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-hint-code {
+  background: var(--primary);
+  padding: 0.25rem 0.65rem;
+  border: 1px solid #000000;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-weight: 900;
+  color: #000000;
+}
+
+.admin-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.95rem;
+  background: var(--primary);
+  color: #000000;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  box-shadow: 4px 4px 0px var(--border);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  margin-top: 0.5rem;
+}
+
+.admin-submit-btn:hover {
+  background: var(--primary-hover);
+  box-shadow: 6px 6px 0px var(--border);
+  transform: translate(-2px, -2px);
+}
+
+.admin-submit-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px var(--border);
+}
+
+.admin-guard-footer {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.admin-guard-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.admin-guard-link:hover {
+  text-decoration: underline;
+}

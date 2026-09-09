@@ -1,0 +1,98 @@
+/* =========================================================
+   NEO-BRUTALIST ARCHITECTURAL AESTHETICS (PRIMARY SYSTEM)
+   =========================================================
+   - Geometric Grotesk Typography (Space Grotesk)
+   - Electric Yellow & Neon Pop Accents (#FFE600, #4ADE80, #FF6584)
+   - Crisp Solid Structural Borders (2px - 3px)
+   - Tactile Unblurred Offset Drop Shadows (3px - 6px)
+   - Zero-blur High-Contrast Visual Architecture
+   ========================================================= */
+
+[data-style="neo-brutalism"],
+[data-style="classical"],
+[data-style="default"] {
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Hard Elevation & Structural Cards */
+[data-style="neo-brutalism"] .content-card,
+[data-style="neo-brutalism"] .em-stat-card,
+[data-style="neo-brutalism"] .em-table-container,
+[data-style="neo-brutalism"] .role-preview-card,
+[data-style="neo-brutalism"] .feature-box,
+[data-style="neo-brutalism"] .student-banner,
+[data-style="neo-brutalism"] .course-card,
+[data-style="neo-brutalism"] .login-card,
+[data-style="neo-brutalism"] .admin-guard-card,
+[data-style="classical"] .content-card,
+[data-style="classical"] .em-stat-card,
+[data-style="classical"] .em-table-container,
+[data-style="classical"] .role-preview-card,
+[data-style="classical"] .feature-box,
+[data-style="classical"] .student-banner,
+[data-style="classical"] .course-card,
+[data-style="classical"] .login-card,
+[data-style="classical"] .admin-guard-card {
+  border: 2px solid var(--border) !important;
+  box-shadow: 4px 4px 0px var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Bold Tactile Buttons */
+[data-style="neo-brutalism"] .btn,
+[data-style="classical"] .btn {
+  border: 2px solid var(--border) !important;
+  box-shadow: 3px 3px 0px var(--border) !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+[data-style="neo-brutalism"] .btn:hover,
+[data-style="classical"] .btn:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 5px 5px 0px var(--border) !important;
+}
+
+[data-style="neo-brutalism"] .btn:active,
+[data-style="classical"] .btn:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px var(--border) !important;
+}
+
+/* Badges Matching Pic 2 */
+[data-style="neo-brutalism"] .badge,
+[data-style="classical"] .badge {
+  border: 2px solid #000000 !important;
+  box-shadow: 3px 3px 0px var(--border) !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border-radius: 3px !important;
+}
+
+/* Navbar Style Badge */
+.em-style-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0px var(--border);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.em-style-badge svg {
+  color: var(--text-main);
+}

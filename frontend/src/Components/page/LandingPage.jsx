@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
   ArrowRight,
-  Shield,
   BookOpen,
   UserCheck,
   CheckCircle,
@@ -15,30 +14,13 @@ import {
   Award
 } from 'lucide-react';
 import '../css/LandingPage.css';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [activeRoleTab, setActiveRoleTab] = useState('admin');
+  const [activeRoleTab, setActiveRoleTab] = useState('teacher');
 
   const roleDetails = {
-    admin: {
-      title: 'Institutional Control Center',
-      desc: 'Complete high-altitude command for university deans, principals, and administrative heads to govern campus operations with precision.',
-      features: [
-        'Real-time student & faculty lifecycle directories',
-        'Academic department budgets and financial tracking',
-        'System audit logs & campus-wide notification dispatch',
-        'Course catalog scheduling and classroom allocation'
-      ],
-      route: '/admin',
-      btnText: 'Launch Admin Console',
-      preview: {
-        metric1: { tag: 'Enrolled Students', val: '2,840' },
-        metric2: { tag: 'Faculty Members', val: '142' },
-        metric3: { tag: 'Campus Budget', val: '$1.4M' },
-        metric4: { tag: 'Active Courses', val: '38' },
-      }
-    },
     teacher: {
       title: 'Faculty Instruction & Grading Suite',
       desc: 'Empowering educators with intuitive attendance management, streamlined assignment evaluations, and class schedule management.',
@@ -48,7 +30,7 @@ const LandingPage = () => {
         'Direct student inquiry desk and announcement board',
         'Real-time class progress and curriculum tracker'
       ],
-      route: '/teacher',
+      route: '/teacher@1234',
       btnText: 'Launch Faculty Desk',
       preview: {
         metric1: { tag: 'Assigned Classes', val: '4 Classes' },
@@ -80,35 +62,38 @@ const LandingPage = () => {
   const currentDetails = roleDetails[activeRoleTab];
 
   return (
-    <div className="landing-page-container">
+    <div className="landing-page-container" data-style="neo-brutalism">
       {/* Navigation Header */}
       <nav className="landing-nav">
         <div className="landing-brand">
           <div className="badge-icon">
-            <GraduationCap size={22} />
+            <GraduationCap size={20} strokeWidth={2.5} />
           </div>
-          <span>Edu<span style={{ color: '#818cf8' }}>Manage</span></span>
+          <div className="brand-text-block">
+            <span className="brand-title">EDU·MANAGE</span>
+            <span className="brand-sub">OPERATING SYSTEM</span>
+          </div>
         </div>
 
         <div className="landing-nav-links">
-          <a href="#features" className="landing-nav-link">Features</a>
+          <a href="#features" className="landing-nav-link">Architecture</a>
           <a href="#roles" className="landing-nav-link">Portals</a>
-          <a href="#impact" className="landing-nav-link">Impact</a>
+          <a href="#impact" className="landing-nav-link">Record</a>
         </div>
 
         <div className="landing-nav-actions">
+          <ThemeSwitcher />
           <button 
             className="btn btn-secondary btn-sm"
-            onClick={() => navigate('/login')}
-            style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.15)' }}
+            onClick={() => navigate('/')}
           >
             Sign In
           </button>
           <button 
             className="btn btn-primary btn-sm"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/teacher@1234')}
           >
-            Live Demo
+            Faculty Portal
           </button>
         </div>
       </nav>
@@ -117,25 +102,25 @@ const LandingPage = () => {
       <section className="hero-section">
         <div className="hero-chip">
           <span className="pulse-dot"></span>
-          <span>EduManage 2026 Enterprise Edition</span>
+          <span>HIGH-CONTRAST ACADEMIC INFRASTRUCTURE // MMXXVI</span>
         </div>
 
         <h1 className="hero-title">
-          The Next-Gen Operating System for <br />
-          <span className="gradient-text">Modern Education</span>
+          THE ARCHITECTURE OF <br />
+          <span className="gradient-text">HIGHER LEARNING</span>
         </h1>
 
-        <p className="hero-desc">
-          Unify campus administration, elevate teaching experiences, and empower students
-          with a single cohesive, lightning-fast digital campus platform.
+        <p className="hero-subtitle">
+          A dignified, cohesive operating platform for deans, distinguished faculty, and scholars.
+          Governing university operations with monumental precision and architectural symmetry.
         </p>
 
         <div className="hero-cta-group">
           <button 
             className="btn btn-primary btn-lg"
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/')}
           >
-            Access Portal <ArrowRight size={18} />
+            Enter Sanctuary <ArrowRight size={16} />
           </button>
           <button 
             className="btn btn-secondary btn-lg"
@@ -143,58 +128,51 @@ const LandingPage = () => {
               const el = document.getElementById('roles');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.2)' }}
           >
-            Explore Role Portals
+            Inspect Portals
           </button>
         </div>
       </section>
 
       {/* Stats Counter */}
       <div className="hero-stats-row" id="impact">
-        <div className="hero-stat-card">
-          <div className="num">12,000+</div>
-          <div className="lbl">Active Students</div>
+        <div className="hero-stat-item">
+          <div className="hero-stat-num">XII,000+</div>
+          <div className="hero-stat-label">Enrolled Scholars</div>
         </div>
-        <div className="hero-stat-card">
-          <div className="num">99.4%</div>
-          <div className="lbl">Uptime & Reliability</div>
+        <div className="hero-stat-item">
+          <div className="hero-stat-num">99.4%</div>
+          <div className="hero-stat-label">Institutional Uptime</div>
         </div>
-        <div className="hero-stat-card">
-          <div className="num">450+</div>
-          <div className="lbl">Partner Institutions</div>
+        <div className="hero-stat-item">
+          <div className="hero-stat-num">CDL+</div>
+          <div className="hero-stat-label">Chartered Faculties</div>
         </div>
-        <div className="hero-stat-card">
-          <div className="num">3.2M</div>
-          <div className="lbl">Assignments Graded</div>
+        <div className="hero-stat-item">
+          <div className="hero-stat-num">3.2M</div>
+          <div className="hero-stat-label">Academic Evaluations</div>
         </div>
       </div>
 
       {/* Role Showcase Section */}
       <section className="role-showcase-section" id="roles">
         <div className="section-header">
-          <h2>Engineered for Every Campus Stakeholder</h2>
-          <p>Select a portal to explore its dedicated interface, tools, and workflows</p>
+          <h2>CHARTERED FOR EVERY STAKEHOLDER</h2>
+          <p>Dignified specialized suites curated for governance, instruction, and scholarship</p>
         </div>
 
         <div className="role-tabs">
           <button 
-            className={`role-tab-btn ${activeRoleTab === 'admin' ? 'active' : ''}`}
-            onClick={() => setActiveRoleTab('admin')}
-          >
-            <Shield size={18} /> Admin Console
-          </button>
-          <button 
             className={`role-tab-btn ${activeRoleTab === 'teacher' ? 'active' : ''}`}
             onClick={() => setActiveRoleTab('teacher')}
           >
-            <BookOpen size={18} /> Teacher Desk
+            <BookOpen size={15} /> I · Faculty Desk
           </button>
           <button 
             className={`role-tab-btn ${activeRoleTab === 'student' ? 'active' : ''}`}
             onClick={() => setActiveRoleTab('student')}
           >
-            <UserCheck size={18} /> Student Hub
+            <UserCheck size={15} /> II · Scholar Hub
           </button>
         </div>
 
@@ -225,7 +203,7 @@ const LandingPage = () => {
                 <span className="visual-mock-dot dot-yellow"></span>
                 <span className="visual-mock-dot dot-green"></span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Live Metric Telemetry</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Live Metric Telemetry</span>
             </div>
             <div className="visual-mock-grid">
               <div className="visual-mock-box">
@@ -312,9 +290,8 @@ const LandingPage = () => {
         <h2>Ready to Transform Your Campus?</h2>
         <p>Experience the EduManage platform right now with interactive sample environments.</p>
         <button 
-          className="btn btn-secondary btn-lg" 
-          style={{ background: '#ffffff', color: '#4f46e5', fontWeight: 700 }}
-          onClick={() => navigate('/login')}
+          className="btn btn-primary btn-lg" 
+          onClick={() => navigate('/')}
         >
           Sign In / Demo Login
         </button>

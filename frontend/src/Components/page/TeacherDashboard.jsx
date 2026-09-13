@@ -11,14 +11,17 @@ import {
   Users,
   Lock,
   AlertCircle,
-  Bell
+  Bell,
+  FileText,
+  Download,
+  Award
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import StatCard from './StatCard';
 import DataTable from './DataTable';
 import Modal from './Modal';
-import { api } from '../../config/api';
+import { api, API_BASE_URL } from '../../config/api';
 import '../css/AdminDashboard.css';
 import '../css/TeacherDashboard.css';
 
@@ -28,6 +31,17 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
   const [selectedClass, setSelectedClass] = useState('CS101');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [toastNotice, setToastNotice] = useState(null);
+
+  // Assignments submissions and grading desk state
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [assignmentAccessError, setAssignmentAccessError] = useState(null);
+  const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
+  const [gradingAssignment, setGradingAssignment] = useState(null);
+  const [gradeValue, setGradeValue] = useState('');
+  const [feedbackValue, setFeedbackValue] = useState('');
+  const [isSavingGrade, setIsSavingGrade] = useState(false);
+  const [gradeError, setGradeError] = useState('');
 
   // Broadcast modal state
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -95,13 +109,35 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
 
   const [selectedLectureId, setSelectedLectureId] = useState('LEC-2');
 
-  // Class list
+  // Class list with associated departments
   const classes = [
-    { code: 'CS101', name: 'Computer Systems & Architecture' },
-    { code: 'DS204', name: 'Machine Learning Fundamentals' },
-    { code: 'CS302', name: 'Web Engineering & Microservices' },
-    { code: 'IT410', name: 'Cloud Infrastructure Lab' },
+    { code: 'CS101', name: 'Computer Systems & Architecture', dept: 'Computer Science' },
+    { code: 'DS204', name: 'Machine Learning Fundamentals', dept: 'Data Science' },
+    { code: 'CS302', name: 'Web Engineering & Microservices', dept: 'Computer Science' },
+    { code: 'IT410', name: 'Cloud Infrastructure Lab', dept: 'Computer Science' },
+    { code: 'BIO302', name: 'Molecular Genetics & Genomics', dept: 'Biotechnology' },
+    { code: 'BUS105', name: 'Financial Accounting Principles', dept: 'Business Admin' },
   ];
+
+  const [courseCatalog, setCourseCatalog] = useState([]);
+
+  useEffect(() => {
+    api.get('/admin/courses').then(data => {
+      if (data && data.length > 0) setCourseCatalog(data);
+    }).catch(() => {});
+  }, []);
+
+  const getDeptForClass = (classCode) => {
+    const codeStr = (classCode || '').trim().toUpperCase();
+    const foundCourse = courseCatalog.find(c => (c.code || '').toUpperCase() === codeStr);
+    if (foundCourse && foundCourse.dept) return foundCourse.dept;
+    const foundClass = classes.find(c => (c.code || '').toUpperCase() === codeStr);
+    if (foundClass && foundClass.dept) return foundClass.dept;
+    if (codeStr.startsWith('DS')) return 'Data Science';
+    if (codeStr.startsWith('BIO')) return 'Biotechnology';
+    if (codeStr.startsWith('BUS')) return 'Business Admin';
+    return 'Computer Science';
+  };
 
   // Dynamic Students Roster loaded from Backend
   const [students, setStudents] = useState([]);
@@ -114,28 +150,30 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
     'LEC-4': {}
   });
 
-  // Load students for active class
+  // Load students and saved attendance for active class
   const fetchStudents = async (classCode) => {
     try {
-      const data = await api.get(`/teachers/students?classCode=${classCode}`);
-      const list = data || [];
+      const [studentData, savedAttendance] = await Promise.all([
+        api.get(`/teachers/students?classCode=${classCode}`),
+        api.get(`/teachers/attendance?classCode=${classCode}&allLectures=true`).catch(() => ({}))
+      ]);
+      const list = studentData || [];
       setStudents(list);
 
-      // Initialize default attendance for any student not yet in state
-      setAttendanceByLecture(prev => {
-        const next = { ...prev };
+      // Hydrate attendance from saved records in backend, fallback to 'present' only if not yet recorded
+      setAttendanceByLecture(() => {
+        const next = {};
         ['LEC-1', 'LEC-2', 'LEC-3', 'LEC-4'].forEach(lecId => {
-          next[lecId] = next[lecId] || {};
+          next[lecId] = {};
+          const savedLec = (savedAttendance && savedAttendance[lecId]) || {};
           list.forEach(s => {
-            if (!next[lecId][s.id]) {
-              next[lecId][s.id] = 'present';
-            }
+            next[lecId][s.id] = savedLec[s.id] || 'present';
           });
         });
         return next;
       });
     } catch (err) {
-      console.error('Failed to fetch class students:', err);
+      console.error('Failed to fetch class students and attendance:', err);
     }
   };
 
@@ -147,10 +185,205 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
     } catch (e) {}
   };
 
+  // Load submissions for class restricted to assigned faculty
+  const fetchAssignments = async (classCode) => {
+    try {
+      setAssignmentsLoading(true);
+      setAssignmentAccessError(null);
+      const teacherParam = currentUser?.id ? `&teacherId=${currentUser.id}` : '';
+      const data = await api.get(`/teachers/assignments?classCode=${classCode}${teacherParam}`);
+      setAssignments(data || []);
+    } catch (err) {
+      console.error('Error loading assignments:', err);
+      if (err.data && err.data.notAssigned) {
+        setAssignmentAccessError(err.message || `Access restricted: You are not assigned to class ${classCode}`);
+      } else {
+        setAssignmentAccessError(err.message || 'Failed to retrieve assignment submissions.');
+      }
+      setAssignments([]);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStudents(selectedClass);
     fetchNotifications(selectedClass);
+    fetchAssignments(selectedClass);
   }, [selectedClass]);
+
+  useEffect(() => {
+    if (activeTab === 'grading') {
+      fetchAssignments(selectedClass);
+    }
+  }, [activeTab]);
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleOpenGradeModal = (assignment) => {
+    setGradingAssignment(assignment);
+    setGradeValue(assignment.grade && assignment.grade !== '-' && assignment.grade !== 'Under Review' ? assignment.grade : 'A');
+    setFeedbackValue(assignment.feedback || '');
+    setGradeError('');
+    setIsGradeModalOpen(true);
+  };
+
+  const handleSaveGrade = async () => {
+    if (!gradingAssignment) return;
+    if (!gradeValue.trim()) {
+      setGradeError('Please enter a grade or marks.');
+      return;
+    }
+
+    try {
+      setIsSavingGrade(true);
+      setGradeError('');
+
+      const res = await api.patch(`/teachers/assignments/${gradingAssignment.id}/grade`, {
+        grade: gradeValue.trim(),
+        feedback: feedbackValue.trim(),
+        status: 'Graded'
+      });
+
+      const updated = res.assignment || {};
+      setAssignments(prev => prev.map(a => 
+        a.id === gradingAssignment.id ? {
+          ...a,
+          grade: updated.grade || gradeValue.trim(),
+          feedback: updated.feedback !== undefined ? updated.feedback : feedbackValue.trim(),
+          status: 'Graded',
+          graded_at: updated.graded_at || new Date().toISOString()
+        } : a
+      ));
+
+      setIsGradeModalOpen(false);
+      setToastNotice(`Grade saved successfully for ${gradingAssignment.student_name || 'student'}`);
+      setShowSaveToast(true);
+      setTimeout(() => setShowSaveToast(false), 3000);
+    } catch (err) {
+      setGradeError(err.message || 'Failed to save grade.');
+    } finally {
+      setIsSavingGrade(false);
+    }
+  };
+
+  const handleDownloadStudentFile = (assignment) => {
+    const filename = assignment.submitted_file;
+    if (!filename) {
+      alert('No file uploaded for this assignment submission.');
+      return;
+    }
+    const downloadUrl = `${API_BASE_URL}/assignments/download/${encodeURIComponent(filename)}`;
+    window.open(downloadUrl, '_blank');
+  };
+
+  const submissionsColumns = [
+    {
+      header: 'Student',
+      render: (row) => (
+        <div>
+          <strong style={{ color: 'var(--text-main)', display: 'block' }}>{row.student_name || 'Enrolled Student'}</strong>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Roll: {row.student_roll || row.student_id}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Assignment Title',
+      render: (row) => (
+        <div>
+          <strong style={{ color: 'var(--text-main)' }}>{row.title}</strong>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Class {row.course}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Submitted File',
+      render: (row) => {
+        if (!row.submitted_file) {
+          return <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>No file uploaded</span>;
+        }
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <FileText size={18} color="var(--primary)" />
+            <div style={{ maxWidth: '180px' }}>
+              <div style={{ 
+                fontSize: '0.82rem', 
+                fontWeight: 600, 
+                color: 'var(--text-main)', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap' 
+              }}>
+                {row.original_file_name || row.submitted_file}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {row.file_size ? formatFileSize(row.file_size) : 'Attached file'}
+              </div>
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              title="Download Student File"
+              style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => handleDownloadStudentFile(row)}
+            >
+              <Download size={12} /> Download
+            </button>
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Submission Date/Time',
+      render: (row) => (
+        <span style={{ fontSize: '0.82rem', color: row.submitted_at ? 'var(--text-main)' : 'var(--text-muted)' }}>
+          {row.submitted_at ? new Date(row.submitted_at).toLocaleString() : 'Not submitted yet'}
+        </span>
+      )
+    },
+    {
+      header: 'Status',
+      render: (row) => {
+        let cls = 'badge-warning';
+        if (row.status === 'Graded') cls = 'badge-success';
+        if (row.status === 'Submitted') cls = 'badge-indigo';
+        return <span className={`badge ${cls}`}>{row.status}</span>;
+      }
+    },
+    {
+      header: 'Grade',
+      render: (row) => (
+        <strong style={{ 
+          fontSize: '0.9rem', 
+          color: row.status === 'Graded' ? '#10B981' : 'var(--text-muted)' 
+        }}>
+          {row.grade || '-'}
+        </strong>
+      ),
+      width: '100px'
+    },
+    {
+      header: 'Action',
+      render: (row) => {
+        if (row.status === 'Pending') {
+          return <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Awaiting submission</span>;
+        }
+        return (
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={() => handleOpenGradeModal(row)}
+          >
+            <Award size={13} /> {row.status === 'Graded' ? 'Edit Grade' : 'Grade / Review'}
+          </button>
+        );
+      }
+    }
+  ];
 
   // Timetable for today
   const todayLectures = [
@@ -238,7 +471,7 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
     }
   };
 
-  // Enroll student with unique password
+  // Enroll student with auto-associated department
   const handleEnrollStudent = async (e) => {
     e.preventDefault();
     setStudentError('');
@@ -248,9 +481,12 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
       return;
     }
 
+    const autoDept = getDeptForClass(selectedClass);
+
     try {
       await api.post('/teachers/students', {
         ...newStudent,
+        dept: autoDept,
         class_code: selectedClass
       });
 
@@ -260,13 +496,13 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
         name: '',
         email: '',
         roll: '',
-        dept: 'Computer Science',
+        dept: autoDept,
         year: 'Year 1',
         gpa: '3.50',
         password: ''
       });
 
-      setToastNotice(`Student ${newStudent.name} successfully enrolled in ${selectedClass} with unique password!`);
+      setToastNotice(`Student ${newStudent.name} successfully enrolled in ${selectedClass} (${autoDept}) with unique password!`);
       setTimeout(() => setToastNotice(null), 4000);
     } catch (err) {
       setStudentError(err.message || 'Invalid or already used password.');
@@ -756,8 +992,64 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
             </>
           )}
 
+          {/* TAB: GRADES & REVIEWS (ASSIGNMENT SUBMISSIONS & EVALUATION) */}
+          {activeTab === 'grading' && (
+            <div>
+              {assignmentAccessError ? (
+                <div className="content-card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1rem'
+                  }}>
+                    <Lock size={30} color="#EF4444" />
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>
+                    Access Restricted to Assigned Faculty
+                  </h3>
+                  <p style={{ maxWidth: '540px', margin: '0 auto 1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                    {assignmentAccessError}
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {classes.map(c => (
+                      <button
+                        key={c.code}
+                        className={`btn btn-sm ${selectedClass === c.code ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedClass(c.code)}
+                      >
+                        Switch to {c.code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <DataTable
+                  title={`Assignment Submissions & Grading Desk (${selectedClass})`}
+                  subtitle={`Showing ${assignments.filter(a => a.status !== 'Pending').length} submitted files from enrolled students in ${selectedClass} • Download student files and evaluate submissions`}
+                  columns={submissionsColumns}
+                  data={assignments}
+                  searchPlaceholder="Search student submissions..."
+                  actionButton={
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      disabled={assignmentsLoading}
+                      onClick={() => fetchAssignments(selectedClass)}
+                    >
+                      {assignmentsLoading ? 'Refreshing...' : 'Refresh Submissions'}
+                    </button>
+                  }
+                />
+              )}
+            </div>
+          )}
+
           {/* TAB 4: MESSAGES & ANNOUNCEMENTS */}
-          {(activeTab === 'messages' || activeTab === 'grading' || activeTab === 'timetable') && (
+          {(activeTab === 'messages' || activeTab === 'timetable') && (
             <div className="content-card" style={{ padding: '2rem' }}>
               <div className="content-card-header" style={{ marginBottom: '1.5rem' }}>
                 <h3>Broadcasted Announcements to {selectedClass}</h3>
@@ -927,17 +1219,6 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
 
           <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label>Roll Number</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. 22CS10"
-                value={newStudent.roll}
-                onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
-              />
-            </div>
-
-            <div>
               <label>Enrolling Class</label>
               <input
                 type="text"
@@ -946,21 +1227,28 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
                 value={selectedClass}
               />
             </div>
+
+            <div>
+              <label>Associated Department</label>
+              <input
+                type="text"
+                disabled
+                className="form-control"
+                value={getDeptForClass(selectedClass)}
+              />
+            </div>
           </div>
 
           <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label>Department</label>
-              <select
+              <label>Roll Number</label>
+              <input
+                type="text"
                 className="form-control"
-                value={newStudent.dept}
-                onChange={(e) => setNewStudent({ ...newStudent, dept: e.target.value })}
-              >
-                <option value="Computer Science">Computer Science</option>
-                <option value="Data Science">Data Science</option>
-                <option value="Business Admin">Business Admin</option>
-                <option value="Biotechnology">Biotechnology</option>
-              </select>
+                placeholder={selectedClass.startsWith('DS') ? 'e.g. 22DS10' : 'e.g. 22CS10'}
+                value={newStudent.roll}
+                onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
+              />
             </div>
 
             <div>
@@ -998,6 +1286,144 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
             </small>
           </div>
         </form>
+      </Modal>
+
+      {/* Grade & Review Submission Modal */}
+      <Modal
+        isOpen={isGradeModalOpen}
+        onClose={() => { if (!isSavingGrade) setIsGradeModalOpen(false); }}
+        title={`Grade Submission: ${gradingAssignment?.title || ''}`}
+        footer={
+          <>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setIsGradeModalOpen(false)}
+              disabled={isSavingGrade}
+            >
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSaveGrade}
+              disabled={isSavingGrade || !gradeValue.trim()}
+            >
+              {isSavingGrade ? 'Saving Grade...' : 'Save Grade & Feedback'}
+            </button>
+          </>
+        }
+      >
+        {gradingAssignment && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Student Name & Roll</div>
+                <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)', display: 'block' }}>
+                  {gradingAssignment.student_name || 'Enrolled Student'}
+                </strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Roll: {gradingAssignment.student_roll || gradingAssignment.student_id} • Class {gradingAssignment.course}
+                </span>
+              </div>
+              <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Submitted At</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: 2 }}>
+                  {gradingAssignment.submitted_at ? new Date(gradingAssignment.submitted_at).toLocaleString() : 'N/A'}
+                </div>
+                <span className={`badge ${gradingAssignment.status === 'Graded' ? 'badge-success' : 'badge-indigo'}`} style={{ marginTop: 4 }}>
+                  {gradingAssignment.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Attached File Box */}
+            <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>
+                Submitted Assignment File
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <FileText size={28} color="var(--primary)" />
+                  <div>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)', display: 'block' }}>
+                      {gradingAssignment.original_file_name || gradingAssignment.submitted_file || 'assignment_file.pdf'}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {gradingAssignment.file_size ? formatFileSize(gradingAssignment.file_size) : 'Uploaded document'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleDownloadStudentFile(gradingAssignment)}
+                >
+                  <Download size={14} /> Download File
+                </button>
+              </div>
+            </div>
+
+            {gradeError && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.75rem 1rem',
+                color: '#ef4444',
+                fontSize: '0.85rem',
+                marginBottom: '1rem'
+              }}>
+                <AlertCircle size={16} />
+                <span>{gradeError}</span>
+              </div>
+            )}
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label>Grade / Score Awarded</label>
+              <input 
+                type="text"
+                className="form-control"
+                placeholder="e.g. 95/100, A+, 88%"
+                value={gradeValue}
+                onChange={(e) => setGradeValue(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-main)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.95rem',
+                  fontWeight: 600
+                }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Instructor Feedback & Remarks</label>
+              <textarea
+                rows={4}
+                className="form-control"
+                placeholder="Provide constructive feedback, praise, or rubric remarks for the student..."
+                value={feedbackValue}
+                onChange={(e) => setFeedbackValue(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-main)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.4,
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

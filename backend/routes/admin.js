@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Teacher, Student, Course } = require('../db/mongodb');
+const { User, Teacher, Student, Course, Assignment } = require('../db/mongodb');
 const { hashPassword, isPasswordUnique } = require('../utils/password');
 
 /**
@@ -157,6 +157,22 @@ router.post('/students', async (req, res) => {
     const newId = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
     const passHash = hashPassword(cleanPassword);
 
+    // Automatically determine department from course/class if not explicitly provided
+    let studentDept = (dept || '').trim();
+    if (!studentDept && class_code) {
+      const course = await Course.findOne({ code: new RegExp(`^${class_code.trim()}$`, 'i') });
+      if (course && course.dept) {
+        studentDept = course.dept;
+      }
+    }
+    if (!studentDept) {
+      const c = (class_code || '').trim().toUpperCase();
+      if (c.startsWith('DS')) studentDept = 'Data Science';
+      else if (c.startsWith('BIO')) studentDept = 'Biotechnology';
+      else if (c.startsWith('BUS')) studentDept = 'Business Admin';
+      else studentDept = 'Computer Science';
+    }
+
     try {
       await User.create({
         id: newId,
@@ -171,7 +187,7 @@ router.post('/students', async (req, res) => {
         name: name.trim(),
         email: cleanEmail,
         roll: cleanRoll,
-        dept: dept || 'Computer Science',
+        dept: studentDept,
         class_code: class_code || 'CS101',
         year: year || 'Year 1',
         gpa: gpa || '3.50',
@@ -252,6 +268,118 @@ router.get('/courses', async (req, res) => {
   } catch (err) {
     console.error('Error fetching courses:', err);
     return res.status(500).json({ error: 'Failed to retrieve courses.' });
+  }
+});
+
+/**
+ * POST /api/admin/courses
+ * Create a new campus course
+ */
+router.post('/courses', async (req, res) => {
+  try {
+    const { code, name, dept, credits, max_capacity } = req.body;
+
+    if (!code || !name) {
+      return res.status(400).json({ error: 'Course code and name are required.' });
+    }
+
+    const cleanCode = code.trim().toUpperCase();
+    const existing = await Course.findOne({ code: cleanCode });
+    if (existing) {
+      return res.status(400).json({ error: `Course with code ${cleanCode} already exists.` });
+    }
+
+    const newCourse = await Course.create({
+      code: cleanCode,
+      name: name.trim(),
+      dept: dept || 'Computer Science',
+      credits: Number(credits) || 4,
+      max_capacity: Number(max_capacity) || 60
+    });
+
+    return res.status(201).json({
+      message: 'Course created successfully.',
+      course: newCourse
+    });
+  } catch (err) {
+    console.error('Error creating course:', err);
+    return res.status(500).json({ error: 'Failed to create course: ' + err.message });
+  }
+});
+
+/**
+ * DELETE /api/admin/courses/:code
+ * Delete an existing campus course
+ */
+router.delete('/courses/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const cleanCode = (code || '').trim().toUpperCase();
+
+    const deleted = await Course.findOneAndDelete({ code: cleanCode });
+    if (!deleted) {
+      return res.status(404).json({ error: 'Course not found.' });
+    }
+
+    return res.json({ message: `Course ${cleanCode} deleted successfully.`, code: cleanCode });
+  } catch (err) {
+    console.error('Error deleting course:', err);
+    return res.status(500).json({ error: 'Failed to delete course: ' + err.message });
+  }
+});
+
+/**
+ * DELETE /api/admin/students/:id
+ * Delete a student record and their associated user login account
+ */
+router.delete('/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const student = await Student.findOneAndDelete({ id });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    // Delete associated login user account
+    await User.findOneAndDelete({ id });
+
+    // Clean up student assignments
+    await Assignment.deleteMany({ student_id: id });
+
+    return res.json({
+      message: `Student ${student.name} and associated login account deleted successfully.`,
+      id
+    });
+  } catch (err) {
+    console.error('Error deleting student:', err);
+    return res.status(500).json({ error: 'Failed to delete student: ' + err.message });
+  }
+});
+
+/**
+ * DELETE /api/admin/teachers/:id
+ * Delete a teacher/faculty member and their associated user login account
+ */
+router.delete('/teachers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const teacher = await Teacher.findOneAndDelete({ id });
+    if (!teacher) {
+      return res.status(404).json({ error: 'Faculty member not found.' });
+    }
+
+    // Delete associated login user account
+    await User.findOneAndDelete({ id });
+
+    return res.json({
+      message: `Faculty member ${teacher.name} and associated login account deleted successfully.`,
+      id
+    });
+  } catch (err) {
+    console.error('Error deleting teacher:', err);
+    return res.status(500).json({ error: 'Failed to delete faculty member: ' + err.message });
   }
 });
 

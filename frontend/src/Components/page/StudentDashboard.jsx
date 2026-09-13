@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Award,
@@ -7,14 +7,17 @@ import {
   Upload,
   Download,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  CalendarCheck,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import StatCard from './StatCard';
 import DataTable from './DataTable';
 import Modal from './Modal';
-import { api } from '../../config/api';
+import { api, API_BASE_URL } from '../../config/api';
 import '../css/AdminDashboard.css';
 import '../css/StudentDashboard.css';
 
@@ -24,7 +27,12 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [viewingAssignment, setViewingAssignment] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Authenticated Student State
   const [student, setStudent] = useState(() => {
@@ -41,6 +49,7 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
   const [courses, setCourses] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [attendanceData, setAttendanceData] = useState({ total: 0, present: 0, late: 0, absent: 0, percentage: 100, records: [] });
 
   // Enforce strict access control: student must be authenticated
   useEffect(() => {
@@ -52,17 +61,19 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
 
     const loadStudentData = async () => {
       try {
-        const [profile, courseList, asnList, notifData] = await Promise.all([
+        const [profile, courseList, asnList, notifData, attData] = await Promise.all([
           api.get(`/students/${activeStudent.id}`).catch(() => activeStudent),
           api.get(`/students/${activeStudent.id}/courses`).catch(() => []),
           api.get(`/students/${activeStudent.id}/assignments`).catch(() => []),
-          api.get(`/notifications?classCode=${activeStudent.class_code || 'CS101'}&userId=${activeStudent.id}`).catch(() => ({ notifications: [] }))
+          api.get(`/notifications?classCode=${activeStudent.class_code || 'CS101'}&userId=${activeStudent.id}`).catch(() => ({ notifications: [] })),
+          api.get(`/students/${activeStudent.id}/attendance`).catch(() => ({ total: 0, present: 0, late: 0, absent: 0, percentage: 100, records: [] }))
         ]);
 
         if (profile) setStudent(profile);
         setCourses(courseList || []);
         setAssignments(asnList || []);
         setNotifications(notifData?.notifications || []);
+        if (attData) setAttendanceData(attData);
       } catch (err) {
         console.error('Failed to load student isolated records:', err);
       }
@@ -100,26 +111,80 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
     ]
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleOpenSubmit = (row) => {
     setSelectedAssignment(row);
+    setSelectedFile(null);
+    setUploadError('');
     setIsSubmitModalOpen(true);
   };
 
-  const handleConfirmSubmit = async () => {
-    if (selectedAssignment) {
-      try {
-        await api.post(`/students/${student.id}/assignments/${selectedAssignment.id}/submit`, {
-          fileName: uploadedFile || 'assignment_submission.pdf'
-        });
-        setAssignments(prev => prev.map(a => 
-          a.id === selectedAssignment.id ? { ...a, status: 'Submitted', grade: 'Under Review' } : a
-        ));
-      } catch (err) {
-        alert('Failed to submit: ' + err.message);
-      }
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      setUploadError('');
     }
-    setIsSubmitModalOpen(false);
-    setUploadedFile(null);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!selectedAssignment) return;
+    if (!selectedFile) {
+      setUploadError('Please select a file from your device before submitting.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError('');
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await api.upload(`/students/${student.id}/assignments/${selectedAssignment.id}/submit`, formData);
+      const updated = res.assignment || {};
+
+      setAssignments(prev => prev.map(a => 
+        a.id === selectedAssignment.id ? {
+          ...a,
+          status: 'Submitted',
+          grade: 'Under Review',
+          submitted_file: updated.submitted_file || selectedFile.name,
+          original_file_name: updated.original_file_name || selectedFile.name,
+          file_size: updated.file_size || selectedFile.size,
+          file_url: updated.file_url || `/api/assignments/download/${updated.submitted_file}`,
+          submitted_at: updated.submitted_at || new Date().toISOString()
+        } : a
+      ));
+
+      setIsSubmitModalOpen(false);
+      setSelectedFile(null);
+    } catch (err) {
+      console.error('Submission error:', err);
+      setUploadError(err.message || 'Failed to submit assignment. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleViewDetails = (row) => {
+    setViewingAssignment(row);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleDownloadFile = (row) => {
+    const filename = row.submitted_file;
+    if (!filename) {
+      alert('No file attached to this assignment.');
+      return;
+    }
+    const downloadUrl = `${API_BASE_URL}/assignments/download/${encodeURIComponent(filename)}`;
+    window.open(downloadUrl, '_blank');
   };
 
   const assignmentColumns = [
@@ -151,11 +216,38 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
             <Upload size={13} /> Submit Work
           </button>
         ) : (
-          <button className="btn btn-secondary btn-sm" onClick={() => alert(`Submitted file: ${row.submitted_file || 'assignment_submission.pdf'}`)}>
-            View Details
+          <button className="btn btn-secondary btn-sm" onClick={() => handleViewDetails(row)}>
+            <FileText size={13} /> View Submission
           </button>
         )
       )
+    }
+  ];
+
+  const attendanceColumns = [
+    { header: 'Date', accessor: 'date', width: '130px' },
+    { header: 'Class Code', accessor: 'class_code', width: '120px' },
+    {
+      header: 'Lecture Session',
+      render: (row) => {
+        let name = row.lecture_id;
+        if (row.lecture_id === 'LEC-1') name = 'Lecture 1 (09:00 AM)';
+        if (row.lecture_id === 'LEC-2') name = 'Lecture 2 (11:00 AM)';
+        if (row.lecture_id === 'LEC-3') name = 'Lecture 3 (01:30 PM)';
+        if (row.lecture_id === 'LEC-4') name = 'Lecture 4 (03:15 PM)';
+        return <span>{name}</span>;
+      }
+    },
+    {
+      header: 'Attendance Status',
+      render: (row) => {
+        let cls = 'badge-success';
+        let label = 'Present';
+        if (row.status === 'late') { cls = 'badge-warning'; label = 'Late'; }
+        if (row.status === 'absent') { cls = 'badge-danger'; label = 'Absent'; }
+        return <span className={`badge ${cls}`}>{label}</span>;
+      },
+      width: '140px'
     }
   ];
 
@@ -228,13 +320,13 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
                   trendType="down"
                 />
                 <StatCard
-                  title="Class Announcements"
-                  value={notifications.length}
-                  subtitle={`From ${student.class_code} Faculty`}
-                  icon={Bell}
-                  colorScheme="cyan"
-                  trend="Direct Delivery"
-                  trendType="neutral"
+                  title="Overall Attendance"
+                  value={`${attendanceData.percentage}%`}
+                  subtitle={`${attendanceData.present}/${attendanceData.total} Sessions`}
+                  icon={CalendarCheck}
+                  colorScheme={attendanceData.percentage >= 75 ? 'cyan' : 'rose'}
+                  trend={attendanceData.percentage >= 75 ? 'Good' : 'Alert'}
+                  trendType={attendanceData.percentage >= 75 ? 'up' : 'down'}
                 />
               </div>
 
@@ -387,6 +479,60 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
             </div>
           )}
 
+          {/* TAB: ATTENDANCE */}
+          {activeTab === 'attendance' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
+              {/* Summary Stats Grid */}
+              <div className="dashboard-stats-grid">
+                <StatCard
+                  title="Overall Attendance"
+                  value={`${attendanceData.percentage}%`}
+                  subtitle={attendanceData.percentage >= 75 ? 'Satisfactory Standing' : 'Below Minimum Requirement'}
+                  icon={CalendarCheck}
+                  colorScheme={attendanceData.percentage >= 75 ? 'emerald' : 'rose'}
+                  trend={attendanceData.percentage >= 75 ? 'Good Standing' : 'Attendance Alert'}
+                  trendType={attendanceData.percentage >= 75 ? 'up' : 'down'}
+                />
+                <StatCard
+                  title="Total Lectures"
+                  value={attendanceData.total}
+                  subtitle="Recorded Academic Sessions"
+                  icon={Clock}
+                  colorScheme="indigo"
+                  trend="Curriculum Total"
+                  trendType="neutral"
+                />
+                <StatCard
+                  title="Present Lectures"
+                  value={attendanceData.present}
+                  subtitle="Attended On Time"
+                  icon={CheckCircle2}
+                  colorScheme="emerald"
+                  trend={`${attendanceData.present} Sessions`}
+                  trendType="up"
+                />
+                <StatCard
+                  title="Late / Absent"
+                  value={`${attendanceData.late} / ${attendanceData.absent}`}
+                  subtitle="Tardy / Missed Lectures"
+                  icon={Award}
+                  colorScheme="amber"
+                  trend={`${attendanceData.absent} Absent`}
+                  trendType="down"
+                />
+              </div>
+
+              {/* Attendance Table */}
+              <DataTable
+                title="Lecture-by-Lecture Attendance History"
+                subtitle={`Showing verified faculty registers for ${student.name} (${student.class_code})`}
+                columns={attendanceColumns}
+                data={attendanceData.records || []}
+                searchPlaceholder="Filter by date, class, or lecture..."
+              />
+            </div>
+          )}
+
           {/* TAB 4: GRADES & GPA */}
           {activeTab === 'grades' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
@@ -485,12 +631,20 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
       {/* Assignment Submission Modal */}
       <Modal
         isOpen={isSubmitModalOpen}
-        onClose={() => setIsSubmitModalOpen(false)}
+        onClose={() => { if (!isUploading) setIsSubmitModalOpen(false); }}
         title={`Submit Work: ${selectedAssignment?.title || ''}`}
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setIsSubmitModalOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleConfirmSubmit}>Confirm & Turn In</button>
+            <button className="btn btn-secondary" onClick={() => setIsSubmitModalOpen(false)} disabled={isUploading}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleConfirmSubmit}
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? 'Uploading & Submitting...' : 'Confirm & Turn In'}
+            </button>
           </>
         }
       >
@@ -503,28 +657,151 @@ const StudentDashboard = ({ currentUser, onRoleChange }) => {
           </div>
         </div>
 
+        {uploadError && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            color: '#ef4444',
+            fontSize: '0.85rem',
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{uploadError}</span>
+          </div>
+        )}
+
         <div className="form-group">
-          <label>Attach Project Archive or PDF File</label>
+          <label>Select Assignment File from Device</label>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
           <div 
             style={{
-              border: '2px dashed var(--border)',
+              border: selectedFile ? '2px solid var(--primary)' : '2px dashed var(--border)',
               borderRadius: 'var(--radius-md)',
-              padding: '2rem',
+              padding: '2rem 1.5rem',
               textAlign: 'center',
               cursor: 'pointer',
-              background: 'var(--bg-surface)'
+              background: selectedFile ? 'rgba(79, 70, 229, 0.04)' : 'var(--bg-surface)',
+              transition: 'all 0.2s ease'
             }}
-            onClick={() => setUploadedFile(`submission_${student.roll.toLowerCase()}.pdf`)}
+            onClick={() => fileInputRef.current?.click()}
           >
-            <Upload size={28} color="var(--primary)" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              {uploadedFile ? uploadedFile : 'Click to select or drop files here'}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
-              Supports PDF, ZIP, TAR.GZ up to 25MB
-            </div>
+            {selectedFile ? (
+              <div>
+                <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
+                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)', wordBreak: 'break-all' }}>
+                  {selectedFile.name}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Size: {formatFileSize(selectedFile.size)}
+                </div>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  style={{ marginTop: '0.75rem' }}
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                >
+                  Choose Different File
+                </button>
+              </div>
+            ) : (
+              <div>
+                <Upload size={32} color="var(--primary)" style={{ margin: '0 auto 8px' }} />
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                  Click to Choose File / Upload File
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Supports PDF, Word, Code, ZIP, and images up to 50MB
+                </div>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  style={{ marginTop: '0.75rem' }}
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                >
+                  Browse Device Files
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      </Modal>
+
+      {/* View Submitted Assignment Details Modal */}
+      <Modal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        title={`Submission Details: ${viewingAssignment?.title || ''}`}
+        footer={
+          <button className="btn btn-secondary" onClick={() => setIsDetailsModalOpen(false)}>
+            Close
+          </button>
+        }
+      >
+        {viewingAssignment && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Course</div>
+                <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{viewingAssignment.course}</strong>
+              </div>
+              <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
+                <span className={`badge ${viewingAssignment.status === 'Graded' ? 'badge-success' : 'badge-indigo'}`} style={{ marginTop: 2 }}>
+                  {viewingAssignment.status}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+                Submitted Assignment File
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <FileText size={28} color="var(--primary)" />
+                  <div>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)', display: 'block' }}>
+                      {viewingAssignment.original_file_name || viewingAssignment.submitted_file || 'assignment_submission.pdf'}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {viewingAssignment.file_size ? formatFileSize(viewingAssignment.file_size) : 'Uploaded document'}
+                      {viewingAssignment.submitted_at && ` • Submitted on ${new Date(viewingAssignment.submitted_at).toLocaleString()}`}
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  className="btn btn-primary btn-sm"
+                  onClick={() => handleDownloadFile(viewingAssignment)}
+                >
+                  <Download size={14} /> Download File
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evaluation & Feedback</span>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: viewingAssignment.status === 'Graded' ? '#10b981' : 'var(--primary)' }}>
+                  {viewingAssignment.grade || 'Under Review'}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {viewingAssignment.feedback || (viewingAssignment.status === 'Graded' ? 'Graded by course faculty.' : 'Your submission is received and is currently under faculty review.')}
+              </p>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

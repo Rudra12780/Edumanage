@@ -8,7 +8,8 @@ import {
   CheckCircle2,
   Info,
   Lock,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
@@ -34,6 +35,17 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
   // Error messages for modals
   const [teacherError, setTeacherError] = useState('');
   const [studentError, setStudentError] = useState('');
+  const [courseError, setCourseError] = useState('');
+  const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
+
+  // New Course Form State
+  const [newCourse, setNewCourse] = useState({
+    code: '',
+    name: '',
+    dept: 'Computer Science',
+    credits: 4,
+    max_capacity: 60
+  });
 
   // New Faculty Form State
   const [newTeacher, setNewTeacher] = useState({
@@ -175,6 +187,83 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
     }
   };
 
+  const handleAddCourse = async (e) => {
+    e.preventDefault();
+    setCourseError('');
+
+    if (!newCourse.code || !newCourse.name) {
+      setCourseError('Course code and course name are required.');
+      return;
+    }
+
+    try {
+      await api.post('/admin/courses', newCourse);
+      const cList = await api.get('/admin/courses');
+      setCourses(cList || []);
+      setIsAddCourseModalOpen(false);
+      setNewCourse({
+        code: '',
+        name: '',
+        dept: 'Computer Science',
+        credits: 4,
+        max_capacity: 60
+      });
+
+      setStatusToast({
+        status: 'Active',
+        message: `Course ${newCourse.code.toUpperCase()} registered successfully!`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      setCourseError(err.message || 'Failed to create course.');
+    }
+  };
+
+  const handleDeleteCourse = async (code) => {
+    if (!window.confirm(`Are you sure you want to delete course ${code}?`)) return;
+    try {
+      await api.delete(`/admin/courses/${code}`);
+      setCourses(prev => prev.filter(c => c.code !== code));
+      setStatusToast({
+        status: 'Active',
+        message: `Course ${code} deleted successfully.`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      alert('Failed to delete course: ' + err.message);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to delete student ${studentName || studentId}? This will also delete their login account.`)) return;
+    try {
+      await api.delete(`/admin/students/${studentId}`);
+      setStudents(prev => prev.filter(s => s.id !== studentId));
+      setStatusToast({
+        status: 'Active',
+        message: `Student ${studentName || studentId} and associated login account removed.`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      alert('Failed to delete student: ' + err.message);
+    }
+  };
+
+  const handleDeleteTeacher = async (teacherId, teacherName) => {
+    if (!window.confirm(`Are you sure you want to delete faculty member ${teacherName || teacherId}? This will also delete their login account.`)) return;
+    try {
+      await api.delete(`/admin/teachers/${teacherId}`);
+      setTeachers(prev => prev.filter(t => t.id !== teacherId));
+      setStatusToast({
+        status: 'Active',
+        message: `Faculty member ${teacherName || teacherId} and associated login account removed.`
+      });
+      setTimeout(() => setStatusToast(null), 5000);
+    } catch (err) {
+      alert('Failed to delete faculty member: ' + err.message);
+    }
+  };
+
   const studentColumns = [
     { header: 'ID', accessor: 'id', width: '110px' },
     {
@@ -215,6 +304,20 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
           </div>
         );
       }
+    },
+    {
+      header: 'Action',
+      width: '90px',
+      render: (row) => (
+        <button
+          className="btn btn-danger btn-sm"
+          style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          onClick={() => handleDeleteStudent(row.id, row.name)}
+          title="Delete student and login account"
+        >
+          <Trash2 size={13} /> Delete
+        </button>
+      )
     }
   ];
 
@@ -239,6 +342,20 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
           {row.status}
         </span>
       )
+    },
+    {
+      header: 'Action',
+      width: '90px',
+      render: (row) => (
+        <button
+          className="btn btn-danger btn-sm"
+          style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          onClick={() => handleDeleteTeacher(row.id, row.name)}
+          title="Delete faculty and login account"
+        >
+          <Trash2 size={13} /> Delete
+        </button>
+      )
     }
   ];
 
@@ -256,6 +373,20 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
             <div style={{ width: `${Math.min(100, ((row.enrolled || 0) / (row.max || 60)) * 100)}%`, height: '100%', background: 'var(--primary)' }}></div>
           </div>
         </div>
+      )
+    },
+    {
+      header: 'Action',
+      width: '90px',
+      render: (row) => (
+        <button
+          className="btn btn-danger btn-sm"
+          style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          onClick={() => handleDeleteCourse(row.code)}
+          title="Delete course"
+        >
+          <Trash2 size={13} /> Delete
+        </button>
       )
     }
   ];
@@ -307,6 +438,10 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                 <button className="btn btn-primary" onClick={() => { setTeacherError(''); setIsAddTeacherModalOpen(true); }}>
                   <Plus size={16} /> Add Teacher
                 </button>
+              ) : activeTab === 'courses' ? (
+                <button className="btn btn-primary" onClick={() => { setCourseError(''); setIsAddCourseModalOpen(true); }}>
+                  <Plus size={16} /> Add Course
+                </button>
               ) : (
                 <button className="btn btn-primary" onClick={() => { setStudentError(''); setIsAddModalOpen(true); }}>
                   <Plus size={16} /> Add Student
@@ -350,7 +485,7 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                 <StatCard
                   title="System Health"
                   value="100%"
-                  subtitle="SQLite Database Persistent"
+                  subtitle="MongoDB Atlas (Cluster0)"
                   icon={CheckCircle2}
                   colorScheme="amber"
                   trend="Online"
@@ -571,6 +706,11 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
               columns={courseColumns}
               data={courses}
               searchPlaceholder="Search course codes..."
+              actionButton={
+                <button className="btn btn-primary btn-sm" onClick={() => { setCourseError(''); setIsAddCourseModalOpen(true); }}>
+                  <Plus size={14} /> Register New Course
+                </button>
+              }
             />
           )}
 
@@ -749,21 +889,22 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
 
           <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label>Roll Number</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. 22CS01"
-                value={newStudent.roll}
-                onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
-              />
-            </div>
-            <div>
               <label>Class Code</label>
               <select
                 className="form-control"
                 value={newStudent.class_code}
-                onChange={(e) => setNewStudent({ ...newStudent, class_code: e.target.value })}
+                onChange={(e) => {
+                  const selClass = e.target.value;
+                  const matchedCourse = courses.find(c => c.code.toUpperCase() === selClass.toUpperCase());
+                  let autoDept = matchedCourse?.dept;
+                  if (!autoDept) {
+                    if (selClass.startsWith('DS')) autoDept = 'Data Science';
+                    else if (selClass.startsWith('BIO')) autoDept = 'Biotechnology';
+                    else if (selClass.startsWith('BUS')) autoDept = 'Business Admin';
+                    else autoDept = 'Computer Science';
+                  }
+                  setNewStudent({ ...newStudent, class_code: selClass, dept: autoDept });
+                }}
               >
                 <option value="CS101">CS101</option>
                 <option value="DS204">DS204</option>
@@ -771,21 +912,43 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
                 <option value="IT410">IT410</option>
               </select>
             </div>
+
+            <div>
+              <label>Associated Department</label>
+              <input
+                type="text"
+                disabled
+                className="form-control"
+                value={newStudent.dept}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label>Department</label>
-            <select
-              className="form-control"
-              value={newStudent.dept}
-              onChange={(e) => setNewStudent({ ...newStudent, dept: e.target.value })}
-            >
-              <option value="Computer Science">Computer Science</option>
-              <option value="Data Science">Data Science</option>
-              <option value="Business Admin">Business Admin</option>
-              <option value="Biotechnology">Biotechnology</option>
-              <option value="Mechanical Eng.">Mechanical Eng.</option>
-            </select>
+          <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label>Roll Number</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder={newStudent.class_code.startsWith('DS') ? 'e.g. 22DS01' : 'e.g. 22CS01'}
+                value={newStudent.roll}
+                onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label>Year Level</label>
+              <select
+                className="form-control"
+                value={newStudent.year}
+                onChange={(e) => setNewStudent({ ...newStudent, year: e.target.value })}
+              >
+                <option value="Year 1">Year 1</option>
+                <option value="Year 2">Year 2</option>
+                <option value="Year 3">Year 3</option>
+                <option value="Year 4">Year 4</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -832,6 +995,105 @@ const AdminDashboard = ({ currentUser, onRoleChange }) => {
             <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
               Must be unique across all accounts. If duplicate, system will show "Invalid or already used password."
             </small>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add Course Modal */}
+      <Modal
+        isOpen={isAddCourseModalOpen}
+        onClose={() => setIsAddCourseModalOpen(false)}
+        title="Register New Academic Course"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsAddCourseModalOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAddCourse}>Register Course</button>
+          </>
+        }
+      >
+        {courseError && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            color: '#ef4444',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{courseError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleAddCourse}>
+          <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+            <div>
+              <label>Course Code</label>
+              <input
+                type="text"
+                required
+                className="form-control"
+                placeholder="e.g. CS205"
+                value={newCourse.code}
+                onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Course Title</label>
+              <input
+                type="text"
+                required
+                className="form-control"
+                placeholder="e.g. Distributed Cloud Computing"
+                value={newCourse.name}
+                onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Academic Department</label>
+            <select
+              className="form-control"
+              value={newCourse.dept}
+              onChange={(e) => setNewCourse({ ...newCourse, dept: e.target.value })}
+            >
+              <option value="Computer Science">Computer Science</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Business Admin">Business Admin</option>
+              <option value="Biotechnology">Biotechnology</option>
+              <option value="Mechanical Eng.">Mechanical Eng.</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label>Credits</label>
+              <input
+                type="number"
+                min="1"
+                max="6"
+                className="form-control"
+                value={newCourse.credits}
+                onChange={(e) => setNewCourse({ ...newCourse, credits: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Maximum Student Capacity</label>
+              <input
+                type="number"
+                min="10"
+                max="200"
+                className="form-control"
+                value={newCourse.max_capacity}
+                onChange={(e) => setNewCourse({ ...newCourse, max_capacity: e.target.value })}
+              />
+            </div>
           </div>
         </form>
       </Modal>

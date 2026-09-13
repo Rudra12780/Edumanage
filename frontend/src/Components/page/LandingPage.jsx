@@ -18,43 +18,43 @@ import ThemeSwitcher from './ThemeSwitcher';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [activeRoleTab, setActiveRoleTab] = useState('teacher');
+  const [activeRoleTab, setActiveRoleTab] = useState('student');
 
   const roleDetails = {
-    teacher: {
-      title: 'Faculty Instruction & Grading Suite',
-      desc: 'Empowering educators with intuitive attendance management, streamlined assignment evaluations, and class schedule management.',
-      features: [
-        '1-Click batch attendance recording with live analytics',
-        'Assignment grading queue with instant feedback',
-        'Direct student inquiry desk and announcement board',
-        'Real-time class progress and curriculum tracker'
-      ],
-      route: '/teacher@1234',
-      btnText: 'Launch Faculty Desk',
-      preview: {
-        metric1: { tag: 'Assigned Classes', val: '4 Classes' },
-        metric2: { tag: 'Active Students', val: '156 Total' },
-        metric3: { tag: 'Pending Reviews', val: '18 Tasks' },
-        metric4: { tag: 'Today Lectures', val: '3 Sessions' },
-      }
-    },
     student: {
       title: 'Student Academic Success Hub',
       desc: 'An inspiring, student-first dashboard to track coursework, submit homework, monitor GPA milestones, and stay ahead of deadlines.',
       features: [
         'Visual cumulative GPA tracking & transcript projections',
-        'Assignment dropzone with status badges & alerts',
-        'Live course syllabus progress and lecture notes',
-        'Interactive weekly timetable and exam calendar'
+        'Assignment file upload with live submission status',
+        'Live course syllabus progress and lecture handouts',
+        'Interactive weekly timetable and attendance registers'
       ],
-      route: '/student',
+      route: '/',
       btnText: 'Launch Student Portal',
       preview: {
         metric1: { tag: 'Current GPA', val: '3.88 / 4.0' },
         metric2: { tag: 'Credits Done', val: '74 / 120' },
         metric3: { tag: 'Attendance Rate', val: '96%' },
         metric4: { tag: 'Active Courses', val: '6 Enrolled' },
+      }
+    },
+    curriculum: {
+      title: 'Academic Curriculum & Course Catalog',
+      desc: 'A comprehensive institutional catalog detailing active term courses, credit structures, departments, and digital academic resources.',
+      features: [
+        'Standardized department course curriculum directories',
+        'Lecture schedule times and hall allocations',
+        'Downloadable course handouts and lab exercises',
+        'Institutional grading rubrics and term analytics'
+      ],
+      route: '/',
+      btnText: 'Explore Academic Courses',
+      preview: {
+        metric1: { tag: 'Departments', val: '6 Disciplines' },
+        metric2: { tag: 'Course Modules', val: '48 Active' },
+        metric3: { tag: 'Credit Hours', val: '180 Total' },
+        metric4: { tag: 'Term Progress', val: 'Week 8 / 16' },
       }
     }
   };
@@ -84,16 +84,10 @@ const LandingPage = () => {
         <div className="landing-nav-actions">
           <ThemeSwitcher />
           <button 
-            className="btn btn-secondary btn-sm"
+            className="btn btn-primary btn-sm"
             onClick={() => navigate('/')}
           >
             Sign In
-          </button>
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={() => navigate('/teacher@1234')}
-          >
-            Faculty Portal
           </button>
         </div>
       </nav>
@@ -163,16 +157,16 @@ const LandingPage = () => {
 
         <div className="role-tabs">
           <button 
-            className={`role-tab-btn ${activeRoleTab === 'teacher' ? 'active' : ''}`}
-            onClick={() => setActiveRoleTab('teacher')}
-          >
-            <BookOpen size={15} /> I · Faculty Desk
-          </button>
-          <button 
             className={`role-tab-btn ${activeRoleTab === 'student' ? 'active' : ''}`}
             onClick={() => setActiveRoleTab('student')}
           >
-            <UserCheck size={15} /> II · Scholar Hub
+            <UserCheck size={15} /> I · Scholar Hub
+          </button>
+          <button 
+            className={`role-tab-btn ${activeRoleTab === 'curriculum' ? 'active' : ''}`}
+            onClick={() => setActiveRoleTab('curriculum')}
+          >
+            <BookOpen size={15} /> II · Academic Catalog
           </button>
         </div>
 

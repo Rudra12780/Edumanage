@@ -81,12 +81,21 @@ const attendanceSchema = new mongoose.Schema({
 const assignmentSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, index: true },
   title: { type: String, required: true, trim: true },
-  course: { type: String, required: true, trim: true },
+  course: { type: String, required: true, trim: true, index: true },
   student_id: { type: String, required: true, index: true },
+  student_name: { type: String, trim: true, default: '' },
+  student_roll: { type: String, trim: true, default: '' },
+  teacher_id: { type: String, default: null, index: true },
   due: { type: String, required: true },
   status: { type: String, enum: ['Pending', 'Submitted', 'Graded'], default: 'Pending' },
   grade: { type: String, default: '-' },
-  submitted_file: { type: String, default: null }
+  feedback: { type: String, default: '' },
+  submitted_file: { type: String, default: null },
+  original_file_name: { type: String, default: null },
+  file_size: { type: Number, default: 0 },
+  file_url: { type: String, default: null },
+  submitted_at: { type: Date, default: null },
+  graded_at: { type: Date, default: null }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
@@ -98,12 +107,22 @@ const NotificationRead = mongoose.models.NotificationRead || mongoose.model('Not
 const Attendance = mongoose.models.Attendance || mongoose.model('Attendance', attendanceSchema);
 const Assignment = mongoose.models.Assignment || mongoose.model('Assignment', assignmentSchema);
 
+let isConnecting = false;
+
 async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return true;
+  }
+  if (isConnecting) {
+    return false;
+  }
+  isConnecting = true;
+
   try {
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 5000,
     });
-    console.log('Connected successfully to MongoDB Atlas Cluster0 (edumanage database)');
+    console.log('[EduManage DB] Connected successfully to MongoDB Atlas Cluster0 (edumanage database)');
 
     // Ensure all unique indexes are built in MongoDB
     await Promise.all([
@@ -129,7 +148,7 @@ async function connectDB() {
         role: 'admin',
         password_hash: adminHash
       });
-      console.log('Default administrator account initialized in MongoDB Atlas.');
+      console.log('[EduManage DB] Default administrator account initialized in MongoDB Atlas.');
     }
 
     // Seed standard courses catalog if empty
@@ -144,10 +163,12 @@ async function connectDB() {
         { code: 'BUS105', name: 'Financial Accounting Principles', dept: 'Business Admin', credits: 3, max_capacity: 70 }
       ];
       await Course.insertMany(standardCourses);
-      console.log('Standard academic courses catalog initialized in MongoDB Atlas.');
+      console.log('[EduManage DB] Standard academic courses catalog initialized in MongoDB Atlas.');
     }
+    isConnecting = false;
+    return true;
   } catch (err) {
-    console.error('MongoDB Atlas Connection Error:', err);
+    isConnecting = false;
     throw err;
   }
 }

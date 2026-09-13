@@ -50,6 +50,7 @@ const Sidebar = ({ isCollapsed, currentRole = 'admin', activeTab = 'overview', o
       { id: 'overview', label: 'Student Dashboard', icon: LayoutDashboard },
       { id: 'courses', label: 'Enrolled Courses', icon: BookOpen, badge: '6' },
       { id: 'assignments', label: 'My Assignments', icon: CalendarCheck, badge: '3' },
+      { id: 'attendance', label: 'My Attendance', icon: CalendarCheck },
       { id: 'grades', label: 'Grades & GPA', icon: Award },
       { id: 'timetable', label: 'Weekly Schedule', icon: Clock },
       { id: 'resources', label: 'E-Library & Notes', icon: Compass },

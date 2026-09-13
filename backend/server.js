@@ -70,7 +70,14 @@ app.get('/', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (err) {
+      // connection error will be reflected in status
+    }
+  }
   const isConnected = mongoose.connection.readyState === 1;
   res.json({
     status: isConnected ? 'online' : 'connecting_database',

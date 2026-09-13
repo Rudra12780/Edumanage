@@ -210,12 +210,14 @@ const TeacherDashboard = ({ currentUser, onRoleChange }) => {
     fetchStudents(selectedClass);
     fetchNotifications(selectedClass);
     fetchAssignments(selectedClass);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
   useEffect(() => {
     if (activeTab === 'grading') {
       fetchAssignments(selectedClass);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const formatFileSize = (bytes) => {
